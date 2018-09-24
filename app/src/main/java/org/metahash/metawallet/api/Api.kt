@@ -23,4 +23,7 @@ interface Api {
 
     @POST
     fun refreshToken(@Url url: String, @Body body: ServiceRequest): Observable<RefreshResponse>
+
+    @POST
+    fun getWalletHistory(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
 }

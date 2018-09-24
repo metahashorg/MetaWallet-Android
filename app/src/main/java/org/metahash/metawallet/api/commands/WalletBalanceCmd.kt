@@ -16,7 +16,7 @@ class WalletBalanceCmd(
 
     override fun serviceRequest(): Observable<Response<ResponseBody>> {
         return api
-                .getUserWallets(getTorrentAddress(),
+                .getWalletBalance(getTorrentAddress(),
                         ServiceRequestFactory.getRequestData(
                         ServiceRequestFactory.REQUESTTYPE.WALLETBALANCE,
                         ServiceRequestFactory.getBalanceParams(address)))

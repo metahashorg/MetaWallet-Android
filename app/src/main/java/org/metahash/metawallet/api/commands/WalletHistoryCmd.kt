@@ -9,18 +9,18 @@ import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
 import retrofit2.Response
 
-class AllWalletsCmd(
+class WalletHistoryCmd(
         private val api: Api
 ) : BaseCommand<Response<ResponseBody>>() {
 
-    var currency: String? = null
+    var address: String = ""
 
     override fun serviceRequest(): Observable<Response<ResponseBody>> {
         return api
-                .getUserWallets(Constants.BASE_URL_WALLET,
+                .getWalletHistory(getTorrentAddress(),
                         ServiceRequestFactory.getRequestData(
-                        ServiceRequestFactory.REQUESTTYPE.ALLWALLETS,
-                        ServiceRequestFactory.getAllWalletsParams(currency)))
+                                ServiceRequestFactory.REQUESTTYPE.WALLETHISTORY,
+                                ServiceRequestFactory.getHistoryParams(address)))
     }
 
     fun executeWithCache() = execute()
@@ -29,8 +29,8 @@ class AllWalletsCmd(
             }
             .doOnNext {
                 if (it.isNotEmpty()) {
-                    WalletApplication.dbHelper.setRawWallets(it)
+                    WalletApplication.dbHelper.setRawWalletHistory(address, it)
                 }
             }
-            .startWith(WalletApplication.dbHelper.getRawWallets())
+            .startWith(WalletApplication.dbHelper.getRawWalletHistory(address))
 }

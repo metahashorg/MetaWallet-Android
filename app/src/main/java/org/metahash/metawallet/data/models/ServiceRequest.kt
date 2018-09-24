@@ -13,5 +13,5 @@ data class ServiceRequest(
         val version: String = DEFAULT_VERSION,
         val token: String = DEFAULT_TOKEN,
         val method: String? = null,
-        val params: JsonArray? = null
+        val params: Any? = null
 )

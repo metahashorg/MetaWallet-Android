@@ -26,6 +26,7 @@ class SplashActivity : BaseActivity() {
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
         ping()
+        //WalletApplication.api.getBalance("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -105,6 +106,15 @@ class SplashActivity : BaseActivity() {
                             } else {
                                 JsFunctionCaller.callFunction(WebView(this),
                                         JsFunctionCaller.FUNCTION.ONIPREADY, "true")
+                                WalletApplication.api.getHistory("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
+                                        .subscribe(
+                                                {
+                                                    it.length
+                                                },
+                                                {
+                                                    it.printStackTrace()
+                                                }
+                                        )
                             }
                         },
                         {

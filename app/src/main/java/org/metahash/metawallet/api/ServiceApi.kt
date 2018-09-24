@@ -37,6 +37,9 @@ class ServiceApi(
     private val refreshTokenCmd by lazy {
         RefreshTokenCmd(api)
     }
+    private val historyCmd by lazy {
+        WalletHistoryCmd(api)
+    }
 
 
     fun login(login: String, password: String): Observable<LoginResponse> {
@@ -47,36 +50,21 @@ class ServiceApi(
 
     fun getAllWallets(currency: String? = null): Observable<String> {
         walletsCmd.currency = currency
-        return walletsCmd.execute()
+        return walletsCmd.executeWithCache()
+    }
+
+    fun getBalance(address: String): Observable<String> {
+        balanceCmd.address = address
+        return balanceCmd.execute()
                 .map {
-                    try {
-                        it.body()?.string() ?: ""
-                    } catch (ex: Exception) {
-                        ex.printStackTrace()
-                        ""
-                    }
+                    val response = it.body()?.string() ?: ""
+                    response
                 }
     }
 
-    fun getBalance(address: String) {
-        balanceCmd.address = address
-        balanceCmd.execute()
-                .subscribe(
-                        {
-                            try {
-                                val a = it.body()?.string()
-                                val b = it.errorBody()?.string()
-                                if (a != null) {
-
-                                }
-                            } catch (ex: Exception) {
-                                ex.printStackTrace()
-                            }
-                        },
-                        {
-                            it.printStackTrace()
-                        }
-                )
+    fun getHistory(address: String): Observable<String> {
+        historyCmd.address = address
+        return historyCmd.executeWithCache()
     }
 
     fun ping() = pingCmd.execute()
