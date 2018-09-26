@@ -1,36 +1,80 @@
 package org.metahash.metawallet.api.commands
 
 import io.reactivex.Observable
-import okhttp3.ResponseBody
+import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
-import retrofit2.Response
+import org.metahash.metawallet.api.mappers.WalletWithBalanceMapper
+import org.metahash.metawallet.data.models.BalanceData
+import org.metahash.metawallet.data.models.BalanceResponse
+import org.metahash.metawallet.data.models.WalletsData
+import java.util.concurrent.Executors
 
 class AllWalletsCmd(
-        private val api: Api
-) : BaseCommand<Response<ResponseBody>>() {
+        private val api: Api,
+        private val balanceCmd: WalletBalanceCmd
+) : BaseCommand<List<WalletsData>>() {
 
-    var currency: String? = null
+    private val executor = Executors.newFixedThreadPool(3)
+    private val toSimpleWalletMapper = WalletWithBalanceMapper()
 
-    override fun serviceRequest(): Observable<Response<ResponseBody>> {
-        return api
-                .getUserWallets(Constants.BASE_URL_WALLET,
-                        ServiceRequestFactory.getRequestData(
-                        ServiceRequestFactory.REQUESTTYPE.ALLWALLETS,
-                        ServiceRequestFactory.getAllWalletsParams(currency)))
+    var currency = ""
+
+    override fun serviceRequest(): Observable<List<WalletsData>> {
+        return getWalletsRequest()
+                .flatMap(
+                        {
+                            getBalancesRequest(it.data.map { it.address })
+                        },
+                        { wallets, balances ->
+                            wallets.data.forEach { wallet ->
+                                val balance = balances.firstOrNull { it.address == wallet.address }
+                                if (balance != null) {
+                                    wallet.balance = balance
+                                }
+                            }
+                            wallets.data
+                        })
     }
 
-    fun executeWithCache() = execute()
-            .map {
-                it.body()?.string() ?: ""
+    private fun getBalancesRequest(addresses: List<String>): Observable<List<BalanceData>> {
+        val list = mutableListOf<Observable<BalanceResponse>>()
+        addresses.forEach {
+            balanceCmd.address = it
+            balanceCmd.subscribeScheduler = Schedulers.from(executor)
+            list.add(balanceCmd.execute())
+        }
+
+        return Observable.combineLatest(
+                list
+        ) { balances ->
+            balances.map {
+                it as BalanceResponse
+                it.result
             }
+        }
+    }
+
+    fun getWalletsRequest() = api
+            .getUserWallets(Constants.BASE_URL_WALLET,
+                    ServiceRequestFactory.getRequestData(
+                            ServiceRequestFactory.REQUESTTYPE.ALLWALLETS,
+                            ServiceRequestFactory.getAllWalletsParams(currency)))
+
+    fun executeWithCache() = execute()
+            .observeOn(Schedulers.computation())
             .doOnNext {
                 if (it.isNotEmpty()) {
-                    WalletApplication.dbHelper.setRawWallets(it)
+                    WalletApplication.dbHelper.setWallets(it, currency)
                 }
             }
-            .startWith(WalletApplication.dbHelper.getRawWallets())
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWallets(currency) }
+                    .subscribeOn(Schedulers.computation())
+                    .filter { it.isNotEmpty() }
+            )
+            .map { it.map { toSimpleWalletMapper.fromEntity(it) } }
+            .map { WalletApplication.gson.toJson(it) }
 }

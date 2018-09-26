@@ -2,9 +2,11 @@ package org.metahash.metawallet.presentation.screens.splash
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.orhanobut.hawk.Hawk
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import org.metahash.metawallet.Constants
@@ -14,6 +16,7 @@ import org.metahash.metawallet.api.JsFunctionCaller
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.extensions.enableInspection
 import org.metahash.metawallet.presentation.base.BaseActivity
+import java.util.concurrent.TimeUnit
 
 class SplashActivity : BaseActivity() {
 
@@ -45,7 +48,11 @@ class SplashActivity : BaseActivity() {
                         //sign in
                         { l, p -> login(l, p) },
                         //get user login
-                        { WalletApplication.dbHelper.getLogin() }
+                        { WalletApplication.dbHelper.getLogin() },
+                        //get wallets by currency
+                        { getWallets(it) },
+                        //get history by currency
+                        { getHistory(it) }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -76,6 +83,9 @@ class SplashActivity : BaseActivity() {
     private fun ping() {
         addSubscription(WalletApplication.api.ping()
                 .flatMap {
+                    if (it.not()) {
+                        return@flatMap Observable.just("")
+                    }
                     if (WalletApplication.dbHelper.hasToken()) {
                         //refresh token and return token
                         WalletApplication.api.refreshToken()
@@ -93,7 +103,7 @@ class SplashActivity : BaseActivity() {
                                     }
                                 }
                     } else {
-                        //no user toke, return empty
+                        //no user token, return empty
                         Observable.just("")
                     }
                 }
@@ -101,25 +111,44 @@ class SplashActivity : BaseActivity() {
                 .subscribe(
                         {
                             if (it.isEmpty()) {
-                                JsFunctionCaller.callFunction(WebView(this),
-                                        JsFunctionCaller.FUNCTION.ONIPREADY, "false")
+                                JsFunctionCaller.callFunction(webView,
+                                        JsFunctionCaller.FUNCTION.ONIPREADY, false)
                             } else {
-                                JsFunctionCaller.callFunction(WebView(this),
-                                        JsFunctionCaller.FUNCTION.ONIPREADY, "true")
-                                WalletApplication.api.getHistory("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
-                                        .subscribe(
-                                                {
-                                                    it.length
-                                                },
-                                                {
-                                                    it.printStackTrace()
-                                                }
-                                        )
+                                JsFunctionCaller.callFunction(webView,
+                                        JsFunctionCaller.FUNCTION.ONIPREADY, true)
                             }
                         },
                         {
                             processResponseError(it, webView)
                         }
                 ))
+    }
+
+    private fun getWallets(currency: String) {
+        WalletApplication.api.getAllWalletsAndBalance(currency)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            JsFunctionCaller.callFunction(webView,
+                                    JsFunctionCaller.FUNCTION.WALLETSRESULT, it)
+                        },
+                        {
+                            processResponseError(it, webView)
+                        }
+                )
+    }
+
+    private fun getHistory(currency: String) {
+        WalletApplication.api.getHistory(currency)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            JsFunctionCaller.callFunction(webView,
+                                    JsFunctionCaller.FUNCTION.HISTORYRESULT, it)
+                        },
+                        {
+                            processResponseError(it, webView)
+                        }
+                )
     }
 }

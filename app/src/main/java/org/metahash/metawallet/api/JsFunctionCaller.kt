@@ -5,18 +5,23 @@ import android.webkit.WebView
 
 object JsFunctionCaller {
 
-    fun callFunction(view: WebView, type: FUNCTION, vararg args: String) {
+    fun callFunction(view: WebView, type: FUNCTION, vararg args: Any) {
         val function = buildFunction(type.fName, args)
         callInternal(view, function)
     }
 
-    private fun buildFunction(name: String, args: Array<out String>): String {
+    private fun buildFunction(name: String, args: Array<out Any>): String {
         val builder = StringBuilder(name)
         builder.append("(")
         args.withIndex().forEach {
-            builder.append("'")
+            val needBracket = it.value is String
+            if (needBracket) {
+                builder.append("'")
+            }
             builder.append(it.value)
-            builder.append("'")
+            if (needBracket) {
+                builder.append("'")
+            }
             if (it.index < args.size - 1) {
                 builder.append(",")
             }
@@ -36,6 +41,8 @@ object JsFunctionCaller {
     enum class FUNCTION(val fName: String) {
         LOGINRESULT("getAuthRequestResult"),
         NOINTERNET("onConnectionError"),
-        ONIPREADY("onConnectionReady")
+        ONIPREADY("onConnectionReady"),
+        WALLETSRESULT("getWalletsDataResult"),
+        HISTORYRESULT("getWalletsHistoryResult"),
     }
 }

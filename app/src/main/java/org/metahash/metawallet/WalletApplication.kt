@@ -1,6 +1,7 @@
 package org.metahash.metawallet
 
 import android.app.Application
+import com.google.gson.Gson
 import com.orhanobut.hawk.Hawk
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -18,6 +19,7 @@ class WalletApplication : Application() {
     companion object {
         val dbHelper: DBHelper by lazy { DBHelper() }
         val api: ServiceApi by lazy { initApi() }
+        val gson = Gson()
 
         private fun initApi(): ServiceApi {
             return ServiceApi(createRetrofit().create(Api::class.java))

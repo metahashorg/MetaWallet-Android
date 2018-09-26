@@ -4,7 +4,9 @@ import android.webkit.JavascriptInterface
 
 class JSBridge(
         private val onAuth: (String, String) -> Unit,
-        private val onGetLogin: () -> String) {
+        private val onGetLogin: () -> String,
+        private val onGetWallets: (String) -> Unit,
+        private val onGetHistory: (String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -15,4 +17,14 @@ class JSBridge(
     //method to return user login to js
     @JavascriptInterface
     fun getAuthData(): String = onGetLogin.invoke()
+
+    @JavascriptInterface
+    fun getWalletsData(currency: String) {
+        onGetWallets.invoke(currency)
+    }
+
+    @JavascriptInterface
+    fun getWalletsHistory(currency: String) {
+        onGetHistory.invoke(currency)
+    }
 }

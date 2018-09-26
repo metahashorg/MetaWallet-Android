@@ -8,8 +8,7 @@ import org.json.JSONObject
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*
-import org.metahash.metawallet.data.models.LoginResponse
-import org.metahash.metawallet.data.models.ResponseError
+import org.metahash.metawallet.data.models.*
 import retrofit2.HttpException
 
 class ServiceApi(
@@ -29,7 +28,7 @@ class ServiceApi(
         GetProxyCommand()
     }
     private val walletsCmd by lazy {
-        AllWalletsCmd(api)
+        AllWalletsCmd(api, balanceCmd)
     }
     private val balanceCmd by lazy {
         WalletBalanceCmd(api)
@@ -38,7 +37,7 @@ class ServiceApi(
         RefreshTokenCmd(api)
     }
     private val historyCmd by lazy {
-        WalletHistoryCmd(api)
+        WalletHistoryCmd(api, walletsCmd)
     }
 
 
@@ -48,22 +47,19 @@ class ServiceApi(
         return loginCmd.execute()
     }
 
-    fun getAllWallets(currency: String? = null): Observable<String> {
+    //get wallets by currency and balance for each wallet address
+    fun getAllWalletsAndBalance(currency: String): Observable<String> {
         walletsCmd.currency = currency
         return walletsCmd.executeWithCache()
     }
 
-    fun getBalance(address: String): Observable<String> {
+    fun getBalance(address: String): Observable<BalanceResponse> {
         balanceCmd.address = address
         return balanceCmd.execute()
-                .map {
-                    val response = it.body()?.string() ?: ""
-                    response
-                }
     }
 
-    fun getHistory(address: String): Observable<String> {
-        historyCmd.address = address
+    fun getHistory(currency: String): Observable<String> {
+        historyCmd.currency = currency
         return historyCmd.executeWithCache()
     }
 

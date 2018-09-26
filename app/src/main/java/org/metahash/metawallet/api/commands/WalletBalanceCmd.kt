@@ -6,15 +6,16 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
+import org.metahash.metawallet.data.models.BalanceResponse
 import retrofit2.Response
 
 class WalletBalanceCmd(
         private val api: Api
-) : BaseCommand<Response<ResponseBody>>() {
+) : BaseCommand<BalanceResponse>() {
 
     var address: String = ""
 
-    override fun serviceRequest(): Observable<Response<ResponseBody>> {
+    override fun serviceRequest(): Observable<BalanceResponse> {
         return api
                 .getWalletBalance(getTorrentAddress(),
                         ServiceRequestFactory.getRequestData(

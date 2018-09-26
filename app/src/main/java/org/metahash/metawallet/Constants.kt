@@ -2,7 +2,7 @@ package org.metahash.metawallet
 
 object Constants {
 
-    const val WEB_URL = "http://ext5.trafsync.com/applogin/"
+    const val WEB_URL = "https://mgapp.metahash.io/"
 
     //prod for decenter ip resolving
     const val URL_PROXY = "proxy.net-main.metahashnetwork.com"
