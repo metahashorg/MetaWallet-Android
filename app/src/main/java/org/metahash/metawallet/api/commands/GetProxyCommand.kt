@@ -1,5 +1,6 @@
 package org.metahash.metawallet.api.commands
 
+import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
@@ -20,6 +21,7 @@ class GetProxyCommand {
                 getPingObs(Constants.URL_PROXY_DEV),
                 getPingObs(Constants.URL_TORRENT_DEV),
                 BiFunction<List<Proxy>, List<Proxy>, Boolean> { proxy, torrent ->
+                    Log.d("MIINE", "proxy = ${proxy.size}; torrent = ${torrent.size}")
                     if (proxy.isNotEmpty()) {
                         WalletApplication.dbHelper.setProxy(proxy[0])
                     }

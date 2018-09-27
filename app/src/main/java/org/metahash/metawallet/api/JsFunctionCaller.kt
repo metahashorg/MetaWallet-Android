@@ -44,5 +44,6 @@ object JsFunctionCaller {
         ONIPREADY("onConnectionReady"),
         WALLETSRESULT("getWalletsDataResult"),
         HISTORYRESULT("getWalletsHistoryResult"),
+        NEWWALLERRESULT("createAddressResult")
     }
 }

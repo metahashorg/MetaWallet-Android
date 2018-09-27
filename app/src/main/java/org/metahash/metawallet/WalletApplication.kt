@@ -1,6 +1,7 @@
 package org.metahash.metawallet
 
 import android.app.Application
+import android.support.multidex.MultiDexApplication
 import com.google.gson.Gson
 import com.orhanobut.hawk.Hawk
 import okhttp3.OkHttpClient
@@ -9,12 +10,14 @@ import org.metahash.metawallet.Constants.BASE_URL
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.data.DBHelper
+import org.spongycastle.jce.provider.BouncyCastleProvider
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
+import java.security.Security
 import java.util.concurrent.TimeUnit
 
-class WalletApplication : Application() {
+class WalletApplication : MultiDexApplication() {
 
     companion object {
         val dbHelper: DBHelper by lazy { DBHelper() }
@@ -45,6 +48,7 @@ class WalletApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Security.addProvider(BouncyCastleProvider())
         Hawk.init(this).build()
     }
 }

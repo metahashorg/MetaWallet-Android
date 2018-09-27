@@ -14,7 +14,9 @@ import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
 import org.metahash.metawallet.api.wvinterface.JSBridge
+import org.metahash.metawallet.extensions.CryptoExt
 import org.metahash.metawallet.extensions.enableInspection
+import org.metahash.metawallet.extensions.fromUI
 import org.metahash.metawallet.presentation.base.BaseActivity
 import java.util.concurrent.TimeUnit
 
@@ -52,7 +54,9 @@ class SplashActivity : BaseActivity() {
                         //get wallets by currency
                         { getWallets(it) },
                         //get history by currency
-                        { getHistory(it) }
+                        { getHistory(it) },
+                        //create address
+                        {name, pas -> createNewAddress(name, pas) }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -150,5 +154,17 @@ class SplashActivity : BaseActivity() {
                             processResponseError(it, webView)
                         }
                 )
+    }
+
+    private fun createNewAddress(name: String, password: String) {
+        val wallet = CryptoExt.generateWallet()
+        if (wallet != null) {
+            WalletApplication.dbHelper.setUserWallet(wallet)
+            fromUI({
+                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address, "")
+            })
+        } else {
+
+        }
     }
 }

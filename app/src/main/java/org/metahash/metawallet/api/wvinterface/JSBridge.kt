@@ -6,7 +6,8 @@ class JSBridge(
         private val onAuth: (String, String) -> Unit,
         private val onGetLogin: () -> String,
         private val onGetWallets: (String) -> Unit,
-        private val onGetHistory: (String) -> Unit) {
+        private val onGetHistory: (String) -> Unit,
+        private val onGenerateAddress: (String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -26,5 +27,10 @@ class JSBridge(
     @JavascriptInterface
     fun getWalletsHistory(currency: String) {
         onGetHistory.invoke(currency)
+    }
+
+    @JavascriptInterface
+    fun createAddress(name: String, password: String) {
+        onGenerateAddress.invoke(name, password)
     }
 }

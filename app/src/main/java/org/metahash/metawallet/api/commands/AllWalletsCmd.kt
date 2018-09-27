@@ -71,7 +71,13 @@ class AllWalletsCmd(
                     WalletApplication.dbHelper.setWallets(it, currency)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWallets(currency) }
+            .startWith(Observable.fromCallable {
+                val res = WalletApplication.dbHelper.getWallets(currency)
+                if (res.isEmpty()) {
+
+                }
+                res
+            }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

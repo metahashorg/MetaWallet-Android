@@ -12,6 +12,7 @@ class DBHelper {
     private val KEY_REFRESH_TOKEN = "key_refresh_token"
     private val KEY_WALLETS = "key_wallets"
     private val KEY_WALLET_HISTORY = "key_wallet_history"
+    private val KEY_USER_WALLETS = "key_user_wallets"
 
     //PROXY AND TORRENT IP
     fun setProxy(proxy: Proxy) {
@@ -48,14 +49,14 @@ class DBHelper {
     fun hasToken() = getToken().isNotEmpty() && getRefreshToken().isNotEmpty()
 
     //WALLETS WITH BALANCE
+    private fun getAllWallets() = Hawk.get<MutableList<WalletsData>>(KEY_WALLETS, mutableListOf())
+
     fun setWallets(wallets: List<WalletsData>, currency: String) {
         val data = getAllWallets()
-        data.removeAll { it.currencyCode.equals(currency, true) }
+        data.removeAll { it.currency.equals(currency, true) }
         data.addAll(wallets)
         Hawk.put(KEY_WALLETS, wallets)
     }
-
-    private fun getAllWallets() = Hawk.get<MutableList<WalletsData>>(KEY_WALLETS, mutableListOf())
 
     fun getWallets(currency: String?): List<WalletsData> {
         val data = getAllWallets()
@@ -63,7 +64,7 @@ class DBHelper {
             return data
         }
         return data.filter {
-            it.currencyCode.equals(currency, true)
+            it.currency.equals(currency, true)
         }
     }
 
@@ -82,5 +83,19 @@ class DBHelper {
         return data.filter {
             it.currency.equals(currency, true)
         }
+    }
+
+    //user wallets
+    private fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
+
+    fun setUserWallet(wallet: Wallet) {
+        val data = getUserWallets()
+        data.add(wallet)
+        Hawk.put(KEY_USER_WALLETS, data)
+    }
+
+    fun getUserWalletByAddress(address: String): Wallet? {
+        return getUserWallets()
+                ?.firstOrNull { it.address == address }
     }
 }
