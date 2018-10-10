@@ -13,12 +13,20 @@ object ServiceRequestFactory {
     private const val METHOD_REFRESH_TOKEN = "user.token.refresh"
     private const val METHOD_WALLET_BALANCE = "fetch-balance"
     private const val METHOD_WALLET_HISTORY = "fetch-history"
+    private const val METHOD_CREATE_TRX = "mhc_send"
 
     //params
     private const val KEY_CURRENCY = "currency"
     private const val KEY_ADDRESS = "address"
     private const val KEY_LOGIN = "login"
     private const val KEY_PASSWORD = "password"
+    private const val KEY_TO = "to"
+    private const val KEY_VALUE = "value"
+    private const val KEY_FEE = "fee"
+    private const val KEY_NONCE = "nonce"
+    private const val KEY_DATA = "data"
+    private const val KEY_PUBKEY = "pubkey"
+    private const val KEY_SIGN = "sign"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -27,6 +35,7 @@ object ServiceRequestFactory {
             REQUESTTYPE.WALLETBALANCE -> createBalanceRequest(params!!)
             REQUESTTYPE.REFRESHTOKEN -> createRefreshRequest()
             REQUESTTYPE.WALLETHISTORY -> createHistoryRequest(params!!)
+            REQUESTTYPE.MAKETRANSACTION -> createTransactionRequest(params!!)
         }
     }
 
@@ -56,6 +65,21 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getTransactionParams(to: String, value: String,
+                             fee: String, nonce: String,
+                             data: String, pubKey: String,
+                             sign: String): JsonObject {
+        return JsonObject().apply {
+            addProperty(KEY_TO, to)
+            addProperty(KEY_VALUE, value)
+            addProperty(KEY_FEE, fee)
+            addProperty(KEY_NONCE, nonce)
+            addProperty(KEY_DATA, data)
+            addProperty(KEY_PUBKEY, pubKey)
+            addProperty(KEY_SIGN, sign)
+        }
+    }
+
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
     private fun createLoginRequest(params: Any) = ServiceRequest(method = METHOD_LOGIN, params = params)
@@ -70,7 +94,7 @@ object ServiceRequestFactory {
             params = params)
 
     private fun createHistoryRequest(params: Any) = ServiceRequest(
-        method = METHOD_WALLET_HISTORY,
+            method = METHOD_WALLET_HISTORY,
             params = params
     )
 
@@ -78,11 +102,17 @@ object ServiceRequestFactory {
             method = METHOD_REFRESH_TOKEN,
             token = WalletApplication.dbHelper.getRefreshToken())
 
+    private fun createTransactionRequest(params: Any) = ServiceRequest(
+            method = METHOD_CREATE_TRX,
+            params = params,
+            jsonrpc = "2.0")
+
     enum class REQUESTTYPE {
         LOGIN,
         ALLWALLETS,
         WALLETBALANCE,
         REFRESHTOKEN,
-        WALLETHISTORY
+        WALLETHISTORY,
+        MAKETRANSACTION
     }
 }

@@ -55,7 +55,7 @@ class DBHelper {
         val data = getAllWallets()
         data.removeAll { it.currency.equals(currency, true) }
         data.addAll(wallets)
-        Hawk.put(KEY_WALLETS, wallets)
+        Hawk.put(KEY_WALLETS, data)
     }
 
     fun getWallets(currency: String?): List<WalletsData> {
@@ -97,5 +97,11 @@ class DBHelper {
     fun getUserWalletByAddress(address: String): Wallet? {
         return getUserWallets()
                 ?.firstOrNull { it.address == address }
+    }
+
+    fun getUserWalletsByCurrency(currency: String): List<Wallet> {
+        return getUserWallets().filter {
+            it.currency.equals(currency, true)
+        }
     }
 }

@@ -24,4 +24,7 @@ interface Api {
 
     @POST
     fun getWalletHistory(@Url url: String, @Body body: ServiceRequest): Observable<HistoryResponse>
+
+    @POST
+    fun makeTransaction(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
 }

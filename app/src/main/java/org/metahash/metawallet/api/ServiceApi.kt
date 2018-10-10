@@ -4,22 +4,17 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
+import okhttp3.ResponseBody
 import org.json.JSONObject
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*
 import org.metahash.metawallet.data.models.*
 import retrofit2.HttpException
+import retrofit2.Response
 
 class ServiceApi(
         private val api: Api) {
-
-    private val proxyUrl: String by lazy {
-        "http://${WalletApplication.dbHelper.getProxy().ip}:80"
-    }
-    private val torrentUrl: String by lazy {
-        WalletApplication.dbHelper.getTorrent().ip + "/api/"
-    }
 
     private val loginCmd: LoginCmd by lazy {
         LoginCmd(api)
@@ -38,6 +33,10 @@ class ServiceApi(
     }
     private val historyCmd by lazy {
         WalletHistoryCmd(api, walletsCmd)
+    }
+
+    private val createTrxCmd by lazy {
+        MakeTransactionCmd(api)
     }
 
 
@@ -61,6 +60,17 @@ class ServiceApi(
     fun getHistory(currency: String): Observable<String> {
         historyCmd.currency = currency
         return historyCmd.executeWithCache()
+    }
+
+    fun createTransaction(trx: Transaction): Observable<Response<ResponseBody>> {
+        createTrxCmd.to = trx.to
+        createTrxCmd.value = trx.value
+        createTrxCmd.fee = trx.fee
+        createTrxCmd.nonce = trx.nonce
+        createTrxCmd.data = trx.data
+        createTrxCmd.pubKey = trx.pubKey
+        createTrxCmd.sign = trx.sign
+        return createTrxCmd.execute()
     }
 
     fun ping() = pingCmd.execute()

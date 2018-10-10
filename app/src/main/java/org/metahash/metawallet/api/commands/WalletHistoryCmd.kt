@@ -8,6 +8,7 @@ import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
+import org.metahash.metawallet.api.mappers.LocalWalletToWalletMapper
 import org.metahash.metawallet.data.models.HistoryData
 import org.metahash.metawallet.data.models.HistoryResponse
 import org.metahash.metawallet.data.models.WalletsResponse
@@ -19,14 +20,19 @@ class WalletHistoryCmd(
 ) : BaseCommand<List<HistoryData>>() {
 
     var currency: String = ""
+    private val fromLocalMapper = LocalWalletToWalletMapper()
 
     override fun serviceRequest(): Observable<List<HistoryData>> {
         return getWalletsByCurrency()
-                .flatMap { getHistoryRequest(it.data.map { it.address }) }
+                .map {
+                    val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency)
+                    val result = it.data.toMutableList()
+                    result.addAll(local.map { fromLocalMapper.fromEntity(it) })
+                    result
+                }
+                .flatMap { getHistoryRequest(it.map { it.address }) }
                 .map { list ->
-                    list.forEach {
-                        it.currency = currency
-                    }
+                    list.forEach { it.currency = currency }
                     list
                 }
     }

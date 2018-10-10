@@ -7,7 +7,10 @@ data class Wallet(
         val address: String,
         val publicKey: ByteArray,
         val privateKeyPKCS1: ByteArray,
-        val privateKey: WalletPrivateKey) : Serializable
+        val privateKey: WalletPrivateKey) : Serializable {
+    var currency = ""
+    var code = ""
+}
 
 data class WalletPrivateKey(
         val algorithm: String,

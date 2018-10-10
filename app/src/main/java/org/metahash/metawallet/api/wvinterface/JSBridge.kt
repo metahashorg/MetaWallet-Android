@@ -7,7 +7,8 @@ class JSBridge(
         private val onGetLogin: () -> String,
         private val onGetWallets: (String) -> Unit,
         private val onGetHistory: (String) -> Unit,
-        private val onGenerateAddress: (String, String) -> Unit) {
+        private val onGenerateAddress: (String, String, String, String) -> Unit,
+        private val onCreateTransaction: (String, String, String, String, String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -30,7 +31,13 @@ class JSBridge(
     }
 
     @JavascriptInterface
-    fun createAddress(name: String, password: String) {
-        onGenerateAddress.invoke(name, password)
+    fun createAddress(name: String, password: String, code: String, currency: String) {
+        onGenerateAddress.invoke(name, password, currency, code)
+    }
+
+    @JavascriptInterface
+    fun sendTMHTx(from: String, password: String, to: String,
+                  amount: String, fee: String, data: String) {
+        onCreateTransaction.invoke(from, password, to, amount, fee, data)
     }
 }

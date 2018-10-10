@@ -2,6 +2,7 @@ package org.metahash.metawallet.presentation.screens.splash
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.support.annotation.IntegerRes
 import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -9,6 +10,7 @@ import android.webkit.WebViewClient
 import com.orhanobut.hawk.Hawk
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
@@ -19,6 +21,11 @@ import org.metahash.metawallet.extensions.enableInspection
 import org.metahash.metawallet.extensions.fromUI
 import org.metahash.metawallet.presentation.base.BaseActivity
 import java.util.concurrent.TimeUnit
+import java.nio.ByteOrder.LITTLE_ENDIAN
+import android.R.array
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+
 
 class SplashActivity : BaseActivity() {
 
@@ -56,7 +63,11 @@ class SplashActivity : BaseActivity() {
                         //get history by currency
                         { getHistory(it) },
                         //create address
-                        {name, pas -> createNewAddress(name, pas) }
+                        { name, pas, cur, code -> createNewAddress(name, pas, cur, code) },
+                        //create transaction
+                        { p1, p2, p3, p4, p5, p6 ->
+                            createTransaction(p1, p2, p3, p4, p5, p6)
+                        }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -156,15 +167,55 @@ class SplashActivity : BaseActivity() {
                 )
     }
 
-    private fun createNewAddress(name: String, password: String) {
-        val wallet = CryptoExt.generateWallet()
+    private fun createNewAddress(name: String, password: String, currency: String, code: String) {
+        val wallet = CryptoExt.createWallet()
         if (wallet != null) {
+            wallet.currency = currency
+            wallet.code = code
             WalletApplication.dbHelper.setUserWallet(wallet)
             fromUI({
-                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address, "")
+                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address)
             })
         } else {
-
+            fromUI({
+                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, "CREATE_WALLET_ERROR")
+            })
         }
+    }
+
+    private fun createTransaction(from: String, password: String, to: String,
+                                  amount: String, fee: String, data: String) {
+        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(from)
+        if (wallet == null) {
+            //send error here
+            JsFunctionCaller.callFunction(webView,
+                    JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "NO_PRIVATE_KEY_FOUND")
+            return
+        }
+        WalletApplication.api.getBalance(wallet.address)
+                .observeOn(Schedulers.computation())
+                .flatMap {
+                    val nonce = it.result.countSpent + 1
+                    val trx = CryptoExt.createTransaction(wallet, to, password, nonce.toString(), amount, fee, data)
+                    WalletApplication.api.createTransaction(trx)
+                }
+                .subscribe(
+                        {
+                            if (it.isSuccessful) {
+                                val a = it.body()?.string()
+                                if (a != null) {
+
+                                }
+                            } else {
+                                val a = it.errorBody()?.string()
+                                if (a != null) {
+
+                                }
+                            }
+                        },
+                        {
+                            it.printStackTrace()
+                        }
+                )
     }
 }

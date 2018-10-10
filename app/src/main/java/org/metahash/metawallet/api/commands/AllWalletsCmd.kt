@@ -7,6 +7,7 @@ import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
+import org.metahash.metawallet.api.mappers.LocalWalletToWalletMapper
 import org.metahash.metawallet.api.mappers.WalletWithBalanceMapper
 import org.metahash.metawallet.data.models.BalanceData
 import org.metahash.metawallet.data.models.BalanceResponse
@@ -20,23 +21,30 @@ class AllWalletsCmd(
 
     private val executor = Executors.newFixedThreadPool(3)
     private val toSimpleWalletMapper = WalletWithBalanceMapper()
+    private val fromLocalMapper = LocalWalletToWalletMapper()
 
     var currency = ""
 
     override fun serviceRequest(): Observable<List<WalletsData>> {
         return getWalletsRequest()
+                .map {
+                    val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency)
+                    val result = it.data.toMutableList()
+                    result.addAll(local.map { fromLocalMapper.fromEntity(it) })
+                    result
+                }
                 .flatMap(
                         {
-                            getBalancesRequest(it.data.map { it.address })
+                            getBalancesRequest(it.map { it.address })
                         },
                         { wallets, balances ->
-                            wallets.data.forEach { wallet ->
+                            wallets.forEach { wallet ->
                                 val balance = balances.firstOrNull { it.address == wallet.address }
                                 if (balance != null) {
                                     wallet.balance = balance
                                 }
                             }
-                            wallets.data
+                            wallets
                         })
     }
 
@@ -71,13 +79,7 @@ class AllWalletsCmd(
                     WalletApplication.dbHelper.setWallets(it, currency)
                 }
             }
-            .startWith(Observable.fromCallable {
-                val res = WalletApplication.dbHelper.getWallets(currency)
-                if (res.isEmpty()) {
-
-                }
-                res
-            }
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWallets(currency) }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )
