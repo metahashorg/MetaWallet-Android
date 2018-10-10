@@ -31,12 +31,16 @@ abstract class BaseActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    fun processResponseError(error: Throwable, webView: WebView) {
+    fun handleCommonError(error: Throwable, webView: WebView) {
+        if (error is ResponseError && error.isNetworkError()) {
+            handleNetworkError(webView)
+        }
+    }
+
+    fun handleLoginResponseError(error: Throwable, webView: WebView) {
         if (error is ResponseError) {
             if (error.isNetworkError()) {
-                JsFunctionCaller.callFunction(
-                        webView,
-                        JsFunctionCaller.FUNCTION.NOINTERNET)
+                handleNetworkError(webView)
             } else {
                 JsFunctionCaller.callFunction(
                         webView,
@@ -44,5 +48,11 @@ abstract class BaseActivity : AppCompatActivity() {
                         error.code, error.msg)
             }
         }
+    }
+
+    private fun handleNetworkError(webView: WebView) {
+        JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.NOINTERNET)
     }
 }

@@ -14,6 +14,7 @@ import java.util.concurrent.Executors
 
 class GetProxyCommand {
 
+    private val MAX_PROXY_COUNT = 3
     private val executor = Executors.newFixedThreadPool(2)
 
     fun execute(): Observable<Boolean> {
@@ -23,10 +24,18 @@ class GetProxyCommand {
                 BiFunction<List<Proxy>, List<Proxy>, Boolean> { proxy, torrent ->
                     Log.d("MIINE", "proxy = ${proxy.size}; torrent = ${torrent.size}")
                     if (proxy.isNotEmpty()) {
-                        WalletApplication.dbHelper.setProxy(proxy[0])
+                        if (proxy.size <= MAX_PROXY_COUNT) {
+                            WalletApplication.dbHelper.setProxy(proxy)
+                        } else {
+                            WalletApplication.dbHelper.setProxy(proxy.subList(0, MAX_PROXY_COUNT))
+                        }
                     }
                     if (torrent.isNotEmpty()) {
-                        WalletApplication.dbHelper.setTorrent(torrent[0])
+                        if (torrent.size <= MAX_PROXY_COUNT) {
+                            WalletApplication.dbHelper.setTorrent(torrent)
+                        } else {
+                            WalletApplication.dbHelper.setTorrent(torrent.subList(0, MAX_PROXY_COUNT))
+                        }
                     }
                     proxy.isNotEmpty() && torrent.isNotEmpty()
                 }

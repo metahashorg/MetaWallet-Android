@@ -48,7 +48,11 @@ class WalletApplication : MultiDexApplication() {
 
     override fun onCreate() {
         super.onCreate()
-        Security.addProvider(BouncyCastleProvider())
         Hawk.init(this).build()
+        try {
+            Security.addProvider(BouncyCastleProvider())
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
     }
 }

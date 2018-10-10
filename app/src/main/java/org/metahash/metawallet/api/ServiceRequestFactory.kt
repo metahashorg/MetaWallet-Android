@@ -13,7 +13,8 @@ object ServiceRequestFactory {
     private const val METHOD_REFRESH_TOKEN = "user.token.refresh"
     private const val METHOD_WALLET_BALANCE = "fetch-balance"
     private const val METHOD_WALLET_HISTORY = "fetch-history"
-    private const val METHOD_CREATE_TRX = "mhc_send"
+    private const val METHOD_CREATE_TX = "mhc_send"
+    private const val METHOD_TX_INFO = "get-tx"
 
     //params
     private const val KEY_CURRENCY = "currency"
@@ -27,6 +28,7 @@ object ServiceRequestFactory {
     private const val KEY_DATA = "data"
     private const val KEY_PUBKEY = "pubkey"
     private const val KEY_SIGN = "sign"
+    private const val KEY_HASH = "hash"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -36,6 +38,7 @@ object ServiceRequestFactory {
             REQUESTTYPE.REFRESHTOKEN -> createRefreshRequest()
             REQUESTTYPE.WALLETHISTORY -> createHistoryRequest(params!!)
             REQUESTTYPE.MAKETRANSACTION -> createTransactionRequest(params!!)
+            REQUESTTYPE.TXINFO -> createTxInfoRequest(params!!)
         }
     }
 
@@ -80,6 +83,12 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getTxInfoParams(hash: String): JsonObject {
+        return JsonObject().apply {
+            addProperty(KEY_HASH, hash)
+        }
+    }
+
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
     private fun createLoginRequest(params: Any) = ServiceRequest(method = METHOD_LOGIN, params = params)
@@ -103,9 +112,14 @@ object ServiceRequestFactory {
             token = WalletApplication.dbHelper.getRefreshToken())
 
     private fun createTransactionRequest(params: Any) = ServiceRequest(
-            method = METHOD_CREATE_TRX,
+            method = METHOD_CREATE_TX,
             params = params,
             jsonrpc = "2.0")
+
+    private fun createTxInfoRequest(params: Any) = ServiceRequest(
+            method = METHOD_TX_INFO,
+            params = params
+    )
 
     enum class REQUESTTYPE {
         LOGIN,
@@ -113,6 +127,7 @@ object ServiceRequestFactory {
         WALLETBALANCE,
         REFRESHTOKEN,
         WALLETHISTORY,
-        MAKETRANSACTION
+        MAKETRANSACTION,
+        TXINFO
     }
 }

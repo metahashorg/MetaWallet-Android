@@ -10,6 +10,7 @@ data class Wallet(
         val privateKey: WalletPrivateKey) : Serializable {
     var currency = ""
     var code = ""
+    var name = ""
 }
 
 data class WalletPrivateKey(

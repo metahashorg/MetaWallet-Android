@@ -14,19 +14,41 @@ class DBHelper {
     private val KEY_WALLET_HISTORY = "key_wallet_history"
     private val KEY_USER_WALLETS = "key_user_wallets"
 
+    fun clearAll() {
+        Hawk.deleteAll()
+    }
+
     //PROXY AND TORRENT IP
-    fun setProxy(proxy: Proxy) {
+    fun setProxy(proxy: List<Proxy>) {
         Hawk.put(KEY_PROXY, proxy)
     }
 
-    fun getProxy() = Hawk.get<Proxy>(KEY_PROXY, Proxy.getDefault())
+    fun getAllProxy() = Hawk.get<List<Proxy>>(KEY_PROXY, listOf())
 
-    fun setTorrent(proxy: Proxy) {
+    fun getProxy(): Proxy {
+        val list = getAllProxy()
+        return if (list.isEmpty()) {
+            Proxy.getDefault()
+        } else {
+            list[0]
+        }
+    }
+
+    fun setTorrent(proxy: List<Proxy>) {
         Hawk.put(KEY_TORRENT, proxy)
     }
 
     //TOKEN AND LOGIN
-    fun getTorrent() = Hawk.get<Proxy>(KEY_TORRENT, Proxy.getDefault())
+    fun getAllTorrent() = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf())
+
+    fun getTorrent(): Proxy {
+        val list = getAllTorrent()
+        return if (list.isEmpty()) {
+            Proxy.getDefault()
+        } else {
+            list[0]
+        }
+    }
 
     fun setToken(token: String) {
         Hawk.put(KEY_TOKEN, token)

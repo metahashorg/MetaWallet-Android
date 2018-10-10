@@ -160,11 +160,10 @@ object CryptoExt {
         result += convertValue(nonce).toLowerCase()
         result += convertValue(0).toLowerCase()
 
-        val l = result.length
         return result.toUpperCase().hexStringToByteArray()
     }
 
-    fun convertValue(value: Long): String {
+    private fun convertValue(value: Long): String {
         return when {
             value < 250 -> String.format("%02X", value)
             value < 65536 -> String.format("%02X", 250) + intToLittleEndian(value.toInt()).substring(0, 4)

@@ -1,9 +1,7 @@
 package org.metahash.metawallet.api
 
 import io.reactivex.Observable
-import okhttp3.ResponseBody
 import org.metahash.metawallet.data.models.*
-import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Url
@@ -26,5 +24,8 @@ interface Api {
     fun getWalletHistory(@Url url: String, @Body body: ServiceRequest): Observable<HistoryResponse>
 
     @POST
-    fun makeTransaction(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
+    fun makeTransaction(@Url url: String, @Body body: ServiceRequest): Observable<CreateTxResponse>
+
+    @POST
+    fun getTxInfo(@Url url: String, @Body body: ServiceRequest): Observable<GetTxInfoResponse>
 }

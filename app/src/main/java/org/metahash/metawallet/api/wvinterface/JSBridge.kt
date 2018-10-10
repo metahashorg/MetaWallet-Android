@@ -8,7 +8,8 @@ class JSBridge(
         private val onGetWallets: (String) -> Unit,
         private val onGetHistory: (String) -> Unit,
         private val onGenerateAddress: (String, String, String, String) -> Unit,
-        private val onCreateTransaction: (String, String, String, String, String, String) -> Unit) {
+        private val onCreateTransaction: (String, String, String, String, String, String) -> Unit,
+        private val onLogOut: () -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -39,5 +40,10 @@ class JSBridge(
     fun sendTMHTx(from: String, password: String, to: String,
                   amount: String, fee: String, data: String) {
         onCreateTransaction.invoke(from, password, to, amount, fee, data)
+    }
+
+    @JavascriptInterface
+    fun logOut() {
+        onLogOut.invoke()
     }
 }

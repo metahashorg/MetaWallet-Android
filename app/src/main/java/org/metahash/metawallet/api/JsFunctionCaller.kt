@@ -45,6 +45,7 @@ object JsFunctionCaller {
         WALLETSRESULT("getWalletsDataResult"),
         HISTORYRESULT("getWalletsHistoryResult"),
         NEWWALLERRESULT("createAddressResult"),
-        TRASACTIONRESULT("sendTMHTxResult")
+        TRASACTIONRESULT("sendTMHTxResult"),
+        TXINFORESULT("onTxChecked")
     }
 }

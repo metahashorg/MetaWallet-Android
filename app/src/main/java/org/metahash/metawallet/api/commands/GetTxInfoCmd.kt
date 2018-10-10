@@ -5,32 +5,26 @@ import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
 import org.metahash.metawallet.api.base.BaseCommandWithMapping
-import org.metahash.metawallet.data.models.CreateTxResponse
+import org.metahash.metawallet.data.models.GetTxInfoResponse
 import org.metahash.metawallet.data.models.TXSTATUS
 
-class MakeTransactionCmd(
+class GetTxInfoCmd(
         private val api: Api
-) : BaseCommandWithMapping<CreateTxResponse, CreateTxResponse>() {
+) : BaseCommandWithMapping<GetTxInfoResponse, GetTxInfoResponse>() {
 
-    var to = ""
-    var value = ""
-    var fee = ""
-    var nonce = ""
-    var data = ""
-    var pubKey = ""
-    var sign = ""
+    var txHash = ""
 
-    var baseProxyUrl = ""
+    var baseTorrentUrl = ""
 
-    override fun serviceRequest(): Observable<CreateTxResponse> {
+    override fun serviceRequest(): Observable<GetTxInfoResponse> {
         return api
-                .makeTransaction(baseProxyUrl,
+                .getTxInfo(baseTorrentUrl,
                         ServiceRequestFactory.getRequestData(
-                        ServiceRequestFactory.REQUESTTYPE.MAKETRANSACTION,
-                        ServiceRequestFactory.getTransactionParams(to, value, fee, nonce, data, pubKey, sign)))
+                        ServiceRequestFactory.REQUESTTYPE.TXINFO,
+                        ServiceRequestFactory.getTxInfoParams(txHash)))
     }
 
-    override fun afterResponse(response: Observable<CreateTxResponse>): Observable<CreateTxResponse> {
+    override fun afterResponse(response: Observable<GetTxInfoResponse>): Observable<GetTxInfoResponse> {
         return response
                 .map {
                     val result = if (it.isSuccessful()) {

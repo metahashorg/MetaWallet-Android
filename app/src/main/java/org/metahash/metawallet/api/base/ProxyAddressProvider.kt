@@ -23,4 +23,22 @@ interface ProxyAddressProvider {
             "http://$address"
         }
     }
+
+    fun formatProxy(ip: String): String {
+        val address = "$ip:$PROXY_PORT"
+        return if (address.startsWith("http")) {
+            address
+        } else {
+            "http://$address"
+        }
+    }
+
+    fun formatTorrent(ip: String): String {
+        val address = "$ip:$TORRENT_PORT"
+        return if (address.startsWith("http")) {
+            address
+        } else {
+            "http://$address"
+        }
+    }
 }
