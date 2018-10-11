@@ -12,6 +12,12 @@ interface Api {
     fun login(@Url url: String, @Body body: ServiceRequest): Observable<LoginResponse>
 
     @POST
+    fun register(@Url url: String, @Body body: ServiceRequest): Observable<RegisterResponse>
+
+    @POST
+    fun syncWallet(@Url url: String, @Body body: ServiceRequest): Observable<SyncWalletResponse>
+
+    @POST
     fun getUserWallets(@Url url: String, @Body body: ServiceRequest): Observable<WalletsResponse>
 
     @POST

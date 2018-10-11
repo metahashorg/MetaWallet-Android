@@ -116,6 +116,13 @@ class DBHelper {
         Hawk.put(KEY_USER_WALLETS, data)
     }
 
+    private fun updateUserWallet(wallet: Wallet) {
+        val data = getUserWallets()
+        data.removeAll { it.address == wallet.address }
+        data.add(wallet)
+        Hawk.put(KEY_USER_WALLETS, data)
+    }
+
     fun getUserWalletByAddress(address: String): Wallet? {
         return getUserWallets()
                 ?.firstOrNull { it.address == address }
@@ -125,5 +132,16 @@ class DBHelper {
         return getUserWallets().filter {
             it.currency.equals(currency, true)
         }
+    }
+
+    fun setWalletSynchronized(address: String) {
+        val wallet = getUserWalletByAddress(address) ?: return
+        wallet.isSynchronized = true
+        updateUserWallet(wallet)
+    }
+
+    fun getUnsynchonizedWallets(): List<Wallet> {
+        val data = getUserWallets()
+        return data.filter { it.isSynchronized.not() }
     }
 }

@@ -40,6 +40,7 @@ object JsFunctionCaller {
 
     enum class FUNCTION(val fName: String) {
         LOGINRESULT("getAuthRequestResult"),
+        REGISTERRESULT("signUpResult"),
         NOINTERNET("onConnectionError"),
         ONIPREADY("onConnectionReady"),
         WALLETSRESULT("getWalletsDataResult"),

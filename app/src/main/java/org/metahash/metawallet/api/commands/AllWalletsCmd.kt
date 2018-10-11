@@ -56,6 +56,10 @@ class AllWalletsCmd(
             list.add(balanceCmd.execute())
         }
 
+        if (addresses.isEmpty()) {
+            return Observable.just(listOf())
+        }
+
         return Observable.combineLatest(
                 list
         ) { balances ->

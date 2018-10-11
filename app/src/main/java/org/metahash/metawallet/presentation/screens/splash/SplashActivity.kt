@@ -2,17 +2,13 @@ package org.metahash.metawallet.presentation.screens.splash
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.support.annotation.IntegerRes
 import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import com.orhanobut.hawk.Hawk
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.functions.BiFunction
-import io.reactivex.functions.Function3
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.Constants
@@ -21,12 +17,13 @@ import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.CreateTxResult
-import org.metahash.metawallet.data.models.GetTxInfoResponse
+import org.metahash.metawallet.data.models.ResponseError
 import org.metahash.metawallet.extensions.CryptoExt
 import org.metahash.metawallet.extensions.enableInspection
 import org.metahash.metawallet.extensions.fromUI
 import org.metahash.metawallet.presentation.base.BaseActivity
-import java.util.concurrent.TimeUnit
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 
 class SplashActivity : BaseActivity() {
@@ -40,8 +37,18 @@ class SplashActivity : BaseActivity() {
         setContentView(R.layout.activity_splash)
         webView = findViewById(R.id.wv)
         initWebView()
+        val array = arrayOf(1L, 249L, 250L, 65535L, 4294967295L, 4294967296L)
+        array.forEach {
+            val array = ByteBuffer
+                    .allocate(8)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putLong(it)
+                    .array()
+            val a = CryptoExt.bytesToHex(array)
+            a.length
+        }
         webView.loadUrl(Constants.WEB_URL)
-        ping()
+        //ping()
         //WalletApplication.api.getBalance("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
     }
 
@@ -67,15 +74,17 @@ class SplashActivity : BaseActivity() {
                         //get history by currency
                         { getHistory(it) },
                         //create address
-                        { name, pas, cur, code -> createNewAddress(name, pas, cur, code) },
+                        { name, pas, cur, code ->
+                            createNewAddress(name, pas, cur, code)
+                        },
                         //create transaction
                         { p1, p2, p3, p4, p5, p6 ->
                             createTransaction(p1, p2, p3, p4, p5, p6)
                         },
                         //logout
-                        {
-                            logout()
-                        }
+                        { logout() },
+                        // register
+                        { login, pass -> register(login, pass) }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -99,12 +108,31 @@ class SplashActivity : BaseActivity() {
                                         webView,
                                         JsFunctionCaller.FUNCTION.LOGINRESULT,
                                         "", "")
+                                checkUnsynchronizedWallets()
                             }
                         },
                         {
                             handleLoginResponseError(it, webView)
                         }
                 ))
+    }
+
+    private fun register(login: String, password: String) {
+        WalletApplication.api.register(login, password)
+                .subscribe(
+                        {
+                            if (it.isOk()) {
+                                JsFunctionCaller.callFunction(
+                                        webView,
+                                        JsFunctionCaller.FUNCTION.REGISTERRESULT,
+                                        "", "")
+                                login(login, password)
+                            }
+                        },
+                        {
+                            handleRegisterResponseError(it, webView)
+                        }
+                )
     }
 
     private fun ping() {
@@ -143,6 +171,7 @@ class SplashActivity : BaseActivity() {
                             } else {
                                 JsFunctionCaller.callFunction(webView,
                                         JsFunctionCaller.FUNCTION.ONIPREADY, true)
+                                checkUnsynchronizedWallets()
                             }
                         },
                         {
@@ -187,7 +216,10 @@ class SplashActivity : BaseActivity() {
             wallet.currency = currency
             wallet.code = code
             wallet.name = name
+            //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
+            //sync wallet
+            syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
             fromUI({
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address)
             })
@@ -214,7 +246,6 @@ class SplashActivity : BaseActivity() {
                     val tx = CryptoExt.createTransaction(wallet, to, password, nonce.toString(), amount, fee, data)
                     fromUI({
                         val res = WalletApplication.api.mapTxResultToString(CreateTxResult(1))
-                        Log.d("MIINE", "stage 1: $res")
                         JsFunctionCaller.callFunction(webView,
                                 JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                     })
@@ -224,7 +255,6 @@ class SplashActivity : BaseActivity() {
                 .subscribe(
                         {
                             val res = WalletApplication.api.mapTxResultToString(it)
-                            Log.d("MIINE", "stage 2: $res")
                             JsFunctionCaller.callFunction(webView,
                                     JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                             if (it.isProxyReady()) {
@@ -244,10 +274,9 @@ class SplashActivity : BaseActivity() {
 
             override fun onNext(result: CreateTxResult) {
                 //update status
-                /*JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.TXINFORESULT, "")*/
                 val res = WalletApplication.api.mapTxResultToString(result)
-                Log.d("MIINE", "stage 3: $res")
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                 if (result.isTorrentSuccessful()) {
                     dispose()
                 }
@@ -261,5 +290,38 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.api.getTxInfo(result, MAX_INFO_TRY_COUNT)
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribeWith(obs))
+    }
+
+    private fun checkUnsynchronizedWallets() {
+        val list = WalletApplication.dbHelper.getUnsynchonizedWallets()
+        list.forEach {
+            syncWallet(
+                    it.address,
+                    CryptoExt.publicKeyToHex(it.publicKey),
+                    it.currency.toInt())
+        }
+    }
+
+    private fun syncWallet(address: String, pubKey: String, currency: Int) {
+        addSubscription(WalletApplication.api.syncWallet(address, pubKey, currency)
+                .subscribe(
+                        {
+                            if (it.isOk()) {
+                                //update wallet
+                                WalletApplication.dbHelper.setWalletSynchronized(address)
+                            }
+                        },
+                        {
+                            if (it is ResponseError) {
+                                handleCommonError(it, webView)
+                                if (it.code.contains("exists", true) ||
+                                        it.message?.contains("exists", true) == true) {
+                                    //update wallet
+                                    WalletApplication.dbHelper.setWalletSynchronized(address)
+                                }
+                            }
+                            it.printStackTrace()
+                        }
+                ))
     }
 }

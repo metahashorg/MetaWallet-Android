@@ -12,7 +12,7 @@ import java.io.InputStreamReader
 import java.net.InetAddress
 import java.util.concurrent.Executors
 
-class GetProxyCommand {
+class GetProxyCmd {
 
     private val MAX_PROXY_COUNT = 3
     private val executor = Executors.newFixedThreadPool(2)

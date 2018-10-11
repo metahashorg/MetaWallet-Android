@@ -7,14 +7,16 @@ import org.metahash.metawallet.api.commands.*
 import org.metahash.metawallet.data.models.*
 import java.util.concurrent.TimeUnit
 
-class ServiceApi(
-        private val api: Api) {
+class ServiceApi(private val api: Api) {
 
-    private val loginCmd: LoginCmd by lazy {
+    private val loginCmd by lazy {
         LoginCmd(api)
     }
+    private val registerCmd by lazy {
+        RegisterCmd(api)
+    }
     private val pingCmd by lazy {
-        GetProxyCommand()
+        GetProxyCmd()
     }
     private val walletsCmd by lazy {
         AllWalletsCmd(api, balanceCmd)
@@ -34,12 +36,21 @@ class ServiceApi(
     private val getTxInfoCmd by lazy {
         GetTxInfoCmd(api)
     }
+    private val syncWalletCmd by lazy {
+        SyncWalletCmd(api)
+    }
 
 
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login
         loginCmd.password = password
         return loginCmd.execute()
+    }
+
+    fun register(login: String, password: String): Observable<RegisterResponse> {
+        registerCmd.login = login
+        registerCmd.password = password
+        return registerCmd.execute()
     }
 
     //get wallets by currency and balance for each wallet address
@@ -152,6 +163,13 @@ class ServiceApi(
     fun refreshToken() = refreshTokenCmd.execute()
 
     fun mapTxResultToString(result: CreateTxResult) = WalletApplication.gson.toJson(result)
+
+    fun syncWallet(address: String, pubKey: String, currency: Int): Observable<SyncWalletResponse> {
+        syncWalletCmd.address = address
+        syncWalletCmd.currency = currency
+        syncWalletCmd.pubKey = pubKey
+        return syncWalletCmd.execute()
+    }
 
     private fun <R> obsToIntervalWithCount(
             obs: Observable<R>,

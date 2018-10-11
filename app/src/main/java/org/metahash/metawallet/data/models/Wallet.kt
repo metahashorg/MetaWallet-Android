@@ -11,6 +11,7 @@ data class Wallet(
     var currency = ""
     var code = ""
     var name = ""
+    var isSynchronized = false
 }
 
 data class WalletPrivateKey(

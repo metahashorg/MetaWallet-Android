@@ -66,7 +66,7 @@ object CryptoExt {
             //signature hex
             val signatureHex = bytesToHex(signature).toLowerCase()
             //public key in hex format
-            val pubHex = bytesToHex(wallet.publicKey).toLowerCase()
+            val pubHex = publicKeyToHex(wallet.publicKey)
             return Transaction(to, amount, formattedFee.toString(), nonce,
                     hexData, pubHex, signatureHex)
         } catch (ex: Exception) {
@@ -74,6 +74,8 @@ object CryptoExt {
         }
         return Transaction()
     }
+
+    fun publicKeyToHex(key: ByteArray): String = bytesToHex(key).toLowerCase()
 
     @Throws(Exception::class)
     private fun signMessage(message: ByteArray, privKey: PrivateKey): ByteArray {
@@ -119,7 +121,7 @@ object CryptoExt {
         return "0x" + mainAddressString + sha256sha256.substring(0, 8)
     }
 
-    private fun bytesToHex(bytes: ByteArray): String {
+    fun bytesToHex(bytes: ByteArray): String {
         val hexChars = CharArray(bytes.size * 2)
         for (j in bytes.indices) {
             val v: Int = bytes[j].toInt() and 0xFF

@@ -1,6 +1,7 @@
 package org.metahash.metawallet.api.wvinterface
 
 import android.webkit.JavascriptInterface
+import kotlin.math.log
 
 class JSBridge(
         private val onAuth: (String, String) -> Unit,
@@ -9,7 +10,8 @@ class JSBridge(
         private val onGetHistory: (String) -> Unit,
         private val onGenerateAddress: (String, String, String, String) -> Unit,
         private val onCreateTransaction: (String, String, String, String, String, String) -> Unit,
-        private val onLogOut: () -> Unit) {
+        private val onLogOut: () -> Unit,
+        private val onSignUp: (String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -45,5 +47,10 @@ class JSBridge(
     @JavascriptInterface
     fun logOut() {
         onLogOut.invoke()
+    }
+
+    @JavascriptInterface
+    fun signUp(login: String, password: String) {
+        onSignUp.invoke(login, password)
     }
 }

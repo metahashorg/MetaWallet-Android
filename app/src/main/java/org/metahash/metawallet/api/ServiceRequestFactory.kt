@@ -9,12 +9,14 @@ object ServiceRequestFactory {
 
     //methods
     private const val METHOD_LOGIN = "user.auth"
+    private const val METHOD_REGISTER = "user.register"
     private const val METHOD_ALL_WALLETS = "address.list"
     private const val METHOD_REFRESH_TOKEN = "user.token.refresh"
     private const val METHOD_WALLET_BALANCE = "fetch-balance"
     private const val METHOD_WALLET_HISTORY = "fetch-history"
     private const val METHOD_CREATE_TX = "mhc_send"
     private const val METHOD_TX_INFO = "get-tx"
+    private const val METHOD_SYNC_WALLET = "address.create"
 
     //params
     private const val KEY_CURRENCY = "currency"
@@ -33,12 +35,14 @@ object ServiceRequestFactory {
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
             REQUESTTYPE.LOGIN -> createLoginRequest(params!!)
+            REQUESTTYPE.REGISTER -> createRegisterRequest(params!!)
             REQUESTTYPE.ALLWALLETS -> createWalletsRequest(params!!)
             REQUESTTYPE.WALLETBALANCE -> createBalanceRequest(params!!)
             REQUESTTYPE.REFRESHTOKEN -> createRefreshRequest()
             REQUESTTYPE.WALLETHISTORY -> createHistoryRequest(params!!)
             REQUESTTYPE.MAKETRANSACTION -> createTransactionRequest(params!!)
             REQUESTTYPE.TXINFO -> createTxInfoRequest(params!!)
+            REQUESTTYPE.SYNCWALLET -> createSyncWalletRequest(params!!)
         }
     }
 
@@ -48,6 +52,15 @@ object ServiceRequestFactory {
                 addProperty(KEY_LOGIN, login)
                 addProperty(KEY_PASSWORD, password)
                 addProperty("ttl", 60)
+            })
+        }
+    }
+
+    fun getRegisterParams(login: String, password: String): JsonArray {
+        return JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty(KEY_LOGIN, login)
+                addProperty(KEY_PASSWORD, password)
             })
         }
     }
@@ -89,9 +102,21 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getSyncWalletParams(address: String, pubKey: String, currency: Int): JsonArray {
+        return JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty(KEY_CURRENCY, currency)
+                addProperty(KEY_ADDRESS, address)
+                addProperty(KEY_PUBKEY, pubKey)
+            })
+        }
+    }
+
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
     private fun createLoginRequest(params: Any) = ServiceRequest(method = METHOD_LOGIN, params = params)
+
+    private fun createRegisterRequest(params: Any) = ServiceRequest(method = METHOD_REGISTER, params = params)
 
     private fun createWalletsRequest(params: Any) = ServiceRequest(
             method = METHOD_ALL_WALLETS,
@@ -121,13 +146,20 @@ object ServiceRequestFactory {
             params = params
     )
 
+    private fun createSyncWalletRequest(params: Any) = ServiceRequest(
+            method = METHOD_SYNC_WALLET,
+            params = params
+    )
+
     enum class REQUESTTYPE {
         LOGIN,
+        REGISTER,
         ALLWALLETS,
         WALLETBALANCE,
         REFRESHTOKEN,
         WALLETHISTORY,
         MAKETRANSACTION,
-        TXINFO
+        TXINFO,
+        SYNCWALLET
     }
 }

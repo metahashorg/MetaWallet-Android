@@ -50,6 +50,19 @@ abstract class BaseActivity : AppCompatActivity() {
         }
     }
 
+    fun handleRegisterResponseError(error: Throwable, webView: WebView) {
+        if (error is ResponseError) {
+            if (error.isNetworkError()) {
+                handleNetworkError(webView)
+            } else {
+                JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.REGISTERRESULT,
+                        error.code, error.msg)
+            }
+        }
+    }
+
     private fun handleNetworkError(webView: WebView) {
         JsFunctionCaller.callFunction(
                 webView,

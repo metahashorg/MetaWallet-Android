@@ -56,6 +56,9 @@ class WalletHistoryCmd(
             requests.add(createHistoryRequest(it))
         }
 
+        if (addresses.isEmpty()) {
+            return Observable.just(listOf())
+        }
         return Observable.combineLatest(
                 requests
         ) { histories ->
