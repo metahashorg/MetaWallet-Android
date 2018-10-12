@@ -24,6 +24,7 @@ import org.metahash.metawallet.extensions.fromUI
 import org.metahash.metawallet.presentation.base.BaseActivity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.TimeUnit
 
 
 class SplashActivity : BaseActivity() {
@@ -84,6 +85,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun logout() {
+        unsubscribe()
         WalletApplication.dbHelper.clearAll()
     }
 
@@ -107,6 +109,7 @@ class SplashActivity : BaseActivity() {
                                         JsFunctionCaller.FUNCTION.LOGINRESULT,
                                         "", "")
                                 checkUnsynchronizedWallets()
+                                startBalancesObserving()
                             }
                         },
                         {
@@ -170,6 +173,7 @@ class SplashActivity : BaseActivity() {
                                 JsFunctionCaller.callFunction(webView,
                                         JsFunctionCaller.FUNCTION.ONIPREADY, true)
                                 checkUnsynchronizedWallets()
+                                startBalancesObserving()
                             }
                         },
                         {
@@ -318,6 +322,24 @@ class SplashActivity : BaseActivity() {
                                     WalletApplication.dbHelper.setWalletSynchronized(address)
                                 }
                             }
+                            it.printStackTrace()
+                        }
+                ))
+    }
+
+    private fun startBalancesObserving() {
+        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
+                .switchMap {
+                    WalletApplication.api.isBalanceChanged("1")
+                }
+                .subscribe(
+                        { changed ->
+                            if (changed) {
+                                JsFunctionCaller.callFunction(webView,
+                                        JsFunctionCaller.FUNCTION.ONDATACHANGED)
+                            }
+                        },
+                        {
                             it.printStackTrace()
                         }
                 ))

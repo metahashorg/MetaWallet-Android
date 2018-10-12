@@ -2,8 +2,6 @@ package org.metahash.metawallet.api.commands
 
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
-import okhttp3.ResponseBody
-import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
@@ -11,35 +9,22 @@ import org.metahash.metawallet.api.base.BaseCommand
 import org.metahash.metawallet.api.mappers.LocalWalletToWalletMapper
 import org.metahash.metawallet.data.models.HistoryData
 import org.metahash.metawallet.data.models.HistoryResponse
-import org.metahash.metawallet.data.models.WalletsResponse
-import retrofit2.Response
 
 class WalletHistoryCmd(
         private val api: Api,
-        private val walletsCmd: AllWalletsCmd
+        private val allWalletsCmd: AllWalletsCmd
 ) : BaseCommand<List<HistoryData>>() {
 
     var currency: String = ""
-    private val fromLocalMapper = LocalWalletToWalletMapper()
 
     override fun serviceRequest(): Observable<List<HistoryData>> {
-        return getWalletsByCurrency()
-                .map {
-                    val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency)
-                    val result = it.data.toMutableList()
-                    result.addAll(local.map { fromLocalMapper.fromEntity(it) })
-                    result
-                }
+        allWalletsCmd.currency = currency
+        return allWalletsCmd.execute()
                 .flatMap { getHistoryRequest(it.map { it.address }) }
                 .map { list ->
                     list.forEach { it.currency = currency }
                     list
                 }
-    }
-
-    private fun getWalletsByCurrency(): Observable<WalletsResponse> {
-        walletsCmd.currency = currency
-        return walletsCmd.getWalletsRequest()
     }
 
     private fun createHistoryRequest(address: String): Observable<HistoryResponse> {

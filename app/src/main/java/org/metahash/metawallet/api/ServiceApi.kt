@@ -19,7 +19,7 @@ class ServiceApi(private val api: Api) {
         GetProxyCmd()
     }
     private val walletsCmd by lazy {
-        AllWalletsCmd(api, balanceCmd)
+        AllBalancesCmd(allWalletsCmd, balanceCmd)
     }
     private val balanceCmd by lazy {
         WalletBalanceCmd(api)
@@ -28,7 +28,7 @@ class ServiceApi(private val api: Api) {
         RefreshTokenCmd(api)
     }
     private val historyCmd by lazy {
-        WalletHistoryCmd(api, walletsCmd)
+        WalletHistoryCmd(api, allWalletsCmd)
     }
     private val createTxCmd by lazy {
         MakeTransactionCmd(api)
@@ -38,6 +38,12 @@ class ServiceApi(private val api: Api) {
     }
     private val syncWalletCmd by lazy {
         SyncWalletCmd(api)
+    }
+    private val allWalletsCmd by lazy {
+        AllWalletsCmd(api)
+    }
+    private val checkBalanceCmd by lazy {
+        BalanceChangedCmd(walletsCmd)
     }
 
 
@@ -170,6 +176,11 @@ class ServiceApi(private val api: Api) {
         syncWalletCmd.currency = currency
         syncWalletCmd.pubKey = pubKey
         return syncWalletCmd.execute()
+    }
+
+    fun isBalanceChanged(currency: String): Observable<Boolean> {
+        checkBalanceCmd.cur = currency
+        return checkBalanceCmd.execute()
     }
 
     private fun <R> obsToIntervalWithCount(
