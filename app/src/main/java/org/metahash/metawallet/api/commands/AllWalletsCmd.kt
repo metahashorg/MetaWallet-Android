@@ -24,6 +24,7 @@ class AllWalletsCmd(
     private val fromLocalMapper = LocalWalletToWalletMapper()
 
     var currency = ""
+    var isOnlyLocal = false
 
     override fun serviceRequest(): Observable<List<WalletsData>> {
         return getWalletsRequest()
@@ -38,9 +39,7 @@ class AllWalletsCmd(
                     result
                 }
                 .flatMap(
-                        {
-                            getBalancesRequest(it.map { it.address })
-                        },
+                        { getBalancesRequest(it.map { it.address }) },
                         { wallets, balances ->
                             wallets.forEach { wallet ->
                                 val balance = balances.firstOrNull { it.address == wallet.address }
@@ -64,9 +63,8 @@ class AllWalletsCmd(
             return Observable.just(listOf())
         }
 
-        return Observable.combineLatest(
-                list
-        ) { balances ->
+        return Observable.combineLatest(list)
+        { balances ->
             balances.map {
                 it as BalanceResponse
                 it.result
@@ -91,6 +89,14 @@ class AllWalletsCmd(
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )
+            //filter by isLocalOnly variable
+            .map {
+                if (isOnlyLocal.not()) {
+                    it
+                } else {
+                    it.filter { it.hasPrivateKey }
+                }
+            }
             .map { it.map { toSimpleWalletMapper.fromEntity(it) } }
             .map { WalletApplication.gson.toJson(it) }
 }

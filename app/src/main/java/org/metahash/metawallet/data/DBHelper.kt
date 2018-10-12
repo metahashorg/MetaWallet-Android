@@ -13,6 +13,7 @@ class DBHelper {
     private val KEY_WALLETS = "key_wallets"
     private val KEY_WALLET_HISTORY = "key_wallet_history"
     private val KEY_USER_WALLETS = "key_user_wallets"
+    private val KEY_ONLY_LOCAL_WALLETS = "key_only_local_wallets"
 
     fun clearAll() {
         Hawk.deleteAll()
@@ -144,4 +145,10 @@ class DBHelper {
         val data = getUserWallets()
         return data.filter { it.isSynchronized.not() }
     }
+
+    fun setOnlyLocalWallets(onlyLocal: Boolean) {
+        Hawk.put(KEY_ONLY_LOCAL_WALLETS, onlyLocal)
+    }
+
+    fun isOnlyLocalWallets() = Hawk.get<Boolean>(KEY_ONLY_LOCAL_WALLETS, false)
 }

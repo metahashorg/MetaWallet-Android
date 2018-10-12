@@ -74,13 +74,21 @@ class SplashActivity : BaseActivity() {
                         //logout
                         { logout() },
                         // register
-                        { login, pass -> register(login, pass) }
+                        { login, pass -> register(login, pass) },
+                        //set only local wallets
+                        { setOnlyLocal(it) },
+                        //get only local parameter
+                        { WalletApplication.dbHelper.isOnlyLocalWallets() }
                 ),
                 Constants.JS_BRIDGE)
     }
 
     private fun logout() {
         WalletApplication.dbHelper.clearAll()
+    }
+
+    private fun setOnlyLocal(onlyLocal: Boolean) {
+        WalletApplication.dbHelper.setOnlyLocalWallets(onlyLocal)
     }
 
     private fun login(login: String, password: String) {
@@ -171,7 +179,9 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
-        addSubscription(WalletApplication.api.getAllWalletsAndBalance(currency)
+        addSubscription(
+                WalletApplication.api.getAllWalletsAndBalance(
+                        currency, WalletApplication.dbHelper.isOnlyLocalWallets())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {

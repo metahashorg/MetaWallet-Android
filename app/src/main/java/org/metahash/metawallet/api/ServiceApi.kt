@@ -54,8 +54,9 @@ class ServiceApi(private val api: Api) {
     }
 
     //get wallets by currency and balance for each wallet address
-    fun getAllWalletsAndBalance(currency: String): Observable<String> {
+    fun getAllWalletsAndBalance(currency: String, localOnly: Boolean): Observable<String> {
         walletsCmd.currency = currency
+        walletsCmd.isOnlyLocal = localOnly
         return walletsCmd.executeWithCache()
     }
 
