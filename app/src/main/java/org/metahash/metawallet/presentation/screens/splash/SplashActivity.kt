@@ -37,18 +37,8 @@ class SplashActivity : BaseActivity() {
         setContentView(R.layout.activity_splash)
         webView = findViewById(R.id.wv)
         initWebView()
-        val array = arrayOf(1L, 249L, 250L, 65535L, 4294967295L, 4294967296L)
-        array.forEach {
-            val array = ByteBuffer
-                    .allocate(8)
-                    .order(ByteOrder.LITTLE_ENDIAN)
-                    .putLong(it)
-                    .array()
-            val a = CryptoExt.bytesToHex(array)
-            a.length
-        }
         webView.loadUrl(Constants.WEB_URL)
-        //ping()
+        ping()
         //WalletApplication.api.getBalance("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
     }
 
@@ -181,7 +171,6 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
-        Toast.makeText(this, "getWallets", Toast.LENGTH_LONG).show()
         addSubscription(WalletApplication.api.getAllWalletsAndBalance(currency)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -190,7 +179,6 @@ class SplashActivity : BaseActivity() {
                                     JsFunctionCaller.FUNCTION.WALLETSRESULT, it)
                         },
                         {
-                            Toast.makeText(this, "getWallets error: ${it.message}", Toast.LENGTH_LONG).show()
                             handleCommonError(it, webView)
                         }
                 ))

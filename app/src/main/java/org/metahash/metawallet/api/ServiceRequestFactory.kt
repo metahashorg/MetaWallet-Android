@@ -148,7 +148,8 @@ object ServiceRequestFactory {
 
     private fun createSyncWalletRequest(params: Any) = ServiceRequest(
             method = METHOD_SYNC_WALLET,
-            params = params
+            params = params,
+            token = WalletApplication.dbHelper.getToken()
     )
 
     enum class REQUESTTYPE {

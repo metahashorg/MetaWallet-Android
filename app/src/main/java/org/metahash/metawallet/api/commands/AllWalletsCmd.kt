@@ -30,6 +30,10 @@ class AllWalletsCmd(
                 .map {
                     val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency)
                     val result = it.data.toMutableList()
+                    //remove all local wallet from remote
+                    local.forEach { wallet ->
+                        result.removeAll { it.address.equals(wallet.address, true) }
+                    }
                     result.addAll(local.map { fromLocalMapper.fromEntity(it) })
                     result
                 }
