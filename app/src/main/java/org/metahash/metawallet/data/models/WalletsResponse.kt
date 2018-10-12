@@ -16,7 +16,8 @@ data class WalletsData(
         @SerializedName("currency_code") val currencyCode: String,
         @SerializedName("public_key") val publicKey: String,
         var balance: BalanceData = BalanceData(),
-        val hasPrivateKey: Boolean = false
+        val hasPrivateKey: Boolean = false,
+        var name: String?
 ) : Serializable {
     fun getBalance() = balance.getBalance().toString()
 }

@@ -6,5 +6,5 @@ import org.metahash.metawallet.data.models.WalletsData
 class WalletWithBalanceMapper : BaseMapper<WalletsData, WalletDataSimple>() {
 
     override fun fromEntity(from: WalletsData) = WalletDataSimple(
-            from.address, "", from.getBalance(), from.hasPrivateKey)
+            from.address, from.name ?: "", from.getBalance(), from.hasPrivateKey)
 }
