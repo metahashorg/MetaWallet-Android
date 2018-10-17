@@ -13,7 +13,8 @@ class JSBridge(
         private val onLogOut: () -> Unit,
         private val onSignUp: (String, String) -> Unit,
         private val setOnlyLocal: (Boolean) -> Unit,
-        private val getOnlyLocal: () -> Boolean) {
+        private val getOnlyLocal: () -> Boolean,
+        private val onGetPrivateKey: (String, String) -> String) {
 
     //method to login
     @JavascriptInterface
@@ -63,4 +64,7 @@ class JSBridge(
 
     @JavascriptInterface
     fun getOnlyLocalAddresses(): Boolean = getOnlyLocal.invoke()
+
+    @JavascriptInterface
+    fun getPrivateKey(address: String, password: String): String = onGetPrivateKey.invoke(address, password)
 }

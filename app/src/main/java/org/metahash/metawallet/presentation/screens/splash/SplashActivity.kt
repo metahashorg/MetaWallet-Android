@@ -22,8 +22,6 @@ import org.metahash.metawallet.extensions.CryptoExt
 import org.metahash.metawallet.extensions.enableInspection
 import org.metahash.metawallet.extensions.fromUI
 import org.metahash.metawallet.presentation.base.BaseActivity
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
 
 
@@ -79,7 +77,9 @@ class SplashActivity : BaseActivity() {
                         //set only local wallets
                         { setOnlyLocal(it) },
                         //get only local parameter
-                        { WalletApplication.dbHelper.isOnlyLocalWallets() }
+                        { WalletApplication.dbHelper.isOnlyLocalWallets() },
+                        //method to get private key
+                        { address, password -> getPrivateKyByAddress(address, password) }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -329,7 +329,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun startBalancesObserving() {
-/*        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
+        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
                 .switchMap {
                     WalletApplication.api.isBalanceChanged("1")
                 }
@@ -343,6 +343,11 @@ class SplashActivity : BaseActivity() {
                         {
                             it.printStackTrace()
                         }
-                ))*/
+                ))
+    }
+
+    private fun getPrivateKyByAddress(address: String, password: String): String {
+        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(address) ?: return ""
+        return CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
     }
 }
