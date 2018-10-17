@@ -16,7 +16,12 @@ class DBHelper {
     private val KEY_ONLY_LOCAL_WALLETS = "key_only_local_wallets"
 
     fun clearAll() {
-        Hawk.deleteAll()
+        Hawk.delete(KEY_TOKEN)
+        Hawk.delete(KEY_LOGIN)
+        Hawk.delete(KEY_REFRESH_TOKEN)
+        Hawk.delete(KEY_WALLETS)
+        Hawk.delete(KEY_WALLET_HISTORY)
+        Hawk.delete(KEY_ONLY_LOCAL_WALLETS)
     }
 
     //PROXY AND TORRENT IP
@@ -72,37 +77,40 @@ class DBHelper {
     fun hasToken() = getToken().isNotEmpty() && getRefreshToken().isNotEmpty()
 
     //WALLETS WITH BALANCE
-    private fun getAllWallets() = Hawk.get<MutableList<WalletsData>>(KEY_WALLETS, mutableListOf())
+    private fun getAllWalletsData() = Hawk.get<MutableList<WalletsData>>(KEY_WALLETS, mutableListOf())
 
-    fun setWallets(wallets: List<WalletsData>, currency: String) {
-        val data = getAllWallets()
-        data.removeAll { it.currency.equals(currency, true) }
+    fun setWalletsData(wallets: List<WalletsData>) {
+        val data = getAllWalletsData()
+        wallets.forEach { wallet ->
+            val pos = data.indexOfFirst { it.address == wallet.address }
+            if (pos != -1) {
+                data.removeAt(pos)
+            }
+        }
         data.addAll(wallets)
         Hawk.put(KEY_WALLETS, data)
     }
 
-    fun getWallets(currency: String?): List<WalletsData> {
-        val data = getAllWallets()
+    fun getWalletsDataByCurrency(currency: String?): List<WalletsData> {
+        val data = getAllWalletsData()
         if (currency == null) {
             return data
         }
-        return data.filter {
-            it.currency.equals(currency, true)
-        }
+        return data.filter { it.currency.equals(currency, true) }
     }
 
     //WALLETS HISTORY
-    private fun getAllHistory() = Hawk.get<MutableList<HistoryData>>(KEY_WALLET_HISTORY, mutableListOf())
+    private fun getAllWalletsHistory() = Hawk.get<MutableList<HistoryData>>(KEY_WALLET_HISTORY, mutableListOf())
 
     fun setWalletHistory(currency: String, list: List<HistoryData>) {
-        val data = getAllHistory()
+        val data = getAllWalletsHistory()
         data.removeAll { it.currency.equals(currency, true) }
         data.addAll(list)
         Hawk.put(KEY_WALLET_HISTORY, data)
     }
 
-    fun getWalletHistory(currency: String): List<HistoryData> {
-        val data = getAllHistory()
+    fun getWalletHistoryByCurrency(currency: String): List<HistoryData> {
+        val data = getAllWalletsHistory()
         return data.filter {
             it.currency.equals(currency, true)
         }
@@ -126,13 +134,13 @@ class DBHelper {
 
     fun getUserWalletByAddress(address: String): Wallet? {
         return getUserWallets()
-                ?.firstOrNull { it.address == address }
+                .firstOrNull { it.address == address }
     }
 
-    fun getUserWalletsByCurrency(currency: String): List<Wallet> {
-        return getUserWallets().filter {
-            it.currency.equals(currency, true)
-        }
+    fun getUserWalletsByCurrency(currency: String, userLogin: String): List<Wallet> {
+        return getUserWallets()
+                .filter { it.currency.equals(currency, true) }
+                .filter { it.userLogin == userLogin }
     }
 
     fun setWalletSynchronized(address: String) {

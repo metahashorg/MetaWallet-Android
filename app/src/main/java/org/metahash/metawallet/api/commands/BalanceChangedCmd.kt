@@ -15,7 +15,7 @@ class BalanceChangedCmd(
 
     override fun afterResponse(response: Observable<List<WalletsData>>): Observable<Boolean> {
         return response.map { remote ->
-            val local = WalletApplication.dbHelper.getWallets(cur)
+            val local = WalletApplication.dbHelper.getWalletsDataByCurrency(cur)
             if (local.isEmpty() && remote.isEmpty()) {
                 return@map false
             } else {
@@ -26,7 +26,7 @@ class BalanceChangedCmd(
                                 common.balance.spent != rWallet.balance.spent
                         if (result) {
                             //update
-                            WalletApplication.dbHelper.setWallets(remote, cur)
+                            WalletApplication.dbHelper.setWalletsData(remote)
                             return@map true
                         }
                     }

@@ -62,10 +62,10 @@ class AllBalancesCmd(
             .observeOn(Schedulers.computation())
             .doOnNext {
                 if (it.isNotEmpty()) {
-                    WalletApplication.dbHelper.setWallets(it, currency)
+                    WalletApplication.dbHelper.setWalletsData(it)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWallets(currency) }
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletsDataByCurrency(currency) }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

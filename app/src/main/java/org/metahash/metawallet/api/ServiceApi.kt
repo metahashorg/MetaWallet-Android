@@ -27,8 +27,8 @@ class ServiceApi(private val api: Api) {
     private val refreshTokenCmd by lazy {
         RefreshTokenCmd(api)
     }
-    private val historyCmd by lazy {
-        WalletHistoryCmd(api, allWalletsCmd)
+    private val allHistoryCmd by lazy {
+        WalletHistoryCmd(allWalletsCmd, historyCmd)
     }
     private val createTxCmd by lazy {
         MakeTransactionCmd(api)
@@ -44,6 +44,9 @@ class ServiceApi(private val api: Api) {
     }
     private val checkBalanceCmd by lazy {
         BalanceChangedCmd(walletsCmd)
+    }
+    private val historyCmd by lazy {
+        HistoryCmd(api)
     }
 
 
@@ -72,8 +75,8 @@ class ServiceApi(private val api: Api) {
     }
 
     fun getHistory(currency: String): Observable<String> {
-        historyCmd.currency = currency
-        return historyCmd.executeWithCache()
+        allHistoryCmd.currency = currency
+        return allHistoryCmd.executeWithCache()
     }
 
     fun createTransaction(tx: Transaction): Observable<CreateTxResult> {

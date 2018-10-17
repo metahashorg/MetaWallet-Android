@@ -218,6 +218,7 @@ class SplashActivity : BaseActivity() {
             wallet.currency = currency
             wallet.code = code
             wallet.name = name
+            wallet.userLogin = WalletApplication.dbHelper.getLogin()
             //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
             //sync wallet
@@ -328,7 +329,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun startBalancesObserving() {
-        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
+/*        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
                 .switchMap {
                     WalletApplication.api.isBalanceChanged("1")
                 }
@@ -342,6 +343,6 @@ class SplashActivity : BaseActivity() {
                         {
                             it.printStackTrace()
                         }
-                ))
+                ))*/
     }
 }

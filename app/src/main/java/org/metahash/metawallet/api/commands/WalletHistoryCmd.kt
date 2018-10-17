@@ -3,19 +3,18 @@ package org.metahash.metawallet.api.commands
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.WalletApplication
-import org.metahash.metawallet.api.Api
-import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
-import org.metahash.metawallet.api.mappers.LocalWalletToWalletMapper
 import org.metahash.metawallet.data.models.HistoryData
 import org.metahash.metawallet.data.models.HistoryResponse
+import java.util.concurrent.Executors
 
 class WalletHistoryCmd(
-        private val api: Api,
-        private val allWalletsCmd: AllWalletsCmd
+        private val allWalletsCmd: AllWalletsCmd,
+        private val historyCmd: HistoryCmd
 ) : BaseCommand<List<HistoryData>>() {
 
     var currency: String = ""
+    private val executor = Executors.newFixedThreadPool(3)
 
     override fun serviceRequest(): Observable<List<HistoryData>> {
         allWalletsCmd.currency = currency
@@ -27,26 +26,19 @@ class WalletHistoryCmd(
                 }
     }
 
-    private fun createHistoryRequest(address: String): Observable<HistoryResponse> {
-        return api
-                .getWalletHistory(getTorrentAddress(),
-                        ServiceRequestFactory.getRequestData(
-                                ServiceRequestFactory.REQUESTTYPE.WALLETHISTORY,
-                                ServiceRequestFactory.getHistoryParams(address)))
-    }
-
     private fun getHistoryRequest(addresses: List<String>): Observable<List<HistoryData>> {
         val requests = mutableListOf<Observable<HistoryResponse>>()
         addresses.forEach {
-            requests.add(createHistoryRequest(it))
+            historyCmd.address = it
+            historyCmd.subscribeScheduler = Schedulers.from(executor)
+            requests.add(historyCmd.execute())
         }
 
         if (addresses.isEmpty()) {
             return Observable.just(listOf())
         }
-        return Observable.combineLatest(
-                requests
-        ) { histories ->
+        return Observable.combineLatest(requests)
+        { histories ->
             val result = mutableListOf<HistoryData>()
             histories.forEach {
                 it as HistoryResponse
@@ -63,7 +55,7 @@ class WalletHistoryCmd(
                     WalletApplication.dbHelper.setWalletHistory(currency, it)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletHistory(currency) }
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletHistoryByCurrency(currency) }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

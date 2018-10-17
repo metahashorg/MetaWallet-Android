@@ -13,7 +13,7 @@ import org.metahash.metawallet.data.models.WalletsResponse
 
 class AllWalletsCmd(
         private val api: Api)
-    :BaseCommandWithMapping<List<WalletsData>, WalletsResponse>() {
+    : BaseCommandWithMapping<List<WalletsData>, WalletsResponse>() {
 
     private val fromLocalMapper = LocalWalletToWalletMapper()
 
@@ -27,7 +27,7 @@ class AllWalletsCmd(
 
     override fun afterResponse(response: Observable<WalletsResponse>): Observable<List<WalletsData>> {
         return response.map {
-            val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency)
+            val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency, WalletApplication.dbHelper.getLogin())
             val result = it.data.toMutableList()
             //remove all local wallet from remote
             local.forEach { wallet ->
