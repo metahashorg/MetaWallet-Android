@@ -65,12 +65,14 @@ object ServiceRequestFactory {
         }
     }
 
-    fun getAllWalletsParams(currency: String?): JsonObject {
-        return if (currency.isNullOrEmpty()) {
-            JsonObject()
+    fun getAllWalletsParams(currency: Int?): JsonArray {
+        return if (currency == -1 || currency == null) {
+            JsonArray()
         } else {
-            JsonObject().apply {
-                addProperty(KEY_CURRENCY, currency)
+            JsonArray().apply {
+                add(JsonObject().apply {
+                    addProperty(KEY_CURRENCY, currency)
+                })
             }
         }
     }

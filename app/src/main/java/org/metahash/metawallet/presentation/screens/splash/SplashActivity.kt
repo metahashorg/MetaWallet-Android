@@ -11,6 +11,7 @@ import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.schedulers.Schedulers
+import org.metahash.metawallet.BuildConfig
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
@@ -79,7 +80,9 @@ class SplashActivity : BaseActivity() {
                         //get only local parameter
                         { WalletApplication.dbHelper.isOnlyLocalWallets() },
                         //method to get private key
-                        { address, password -> getPrivateKyByAddress(address, password) }
+                        { address, password -> getPrivateKyByAddress(address, password) },
+                        //get app version
+                        { BuildConfig.VERSION_NAME }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -199,7 +202,8 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getHistory(currency: String) {
-        addSubscription(WalletApplication.api.getHistory(currency)
+        addSubscription(WalletApplication.api.getHistory(
+                currency, WalletApplication.dbHelper.isOnlyLocalWallets())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
@@ -329,7 +333,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun startBalancesObserving() {
-        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
+/*        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
                 .switchMap {
                     WalletApplication.api.isBalanceChanged("1")
                 }
@@ -343,7 +347,7 @@ class SplashActivity : BaseActivity() {
                         {
                             it.printStackTrace()
                         }
-                ))
+                ))*/
     }
 
     private fun getPrivateKyByAddress(address: String, password: String): String {

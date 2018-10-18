@@ -13,15 +13,17 @@ class WalletHistoryCmd(
         private val historyCmd: HistoryCmd
 ) : BaseCommand<List<HistoryData>>() {
 
-    var currency: String = ""
+    var currency = -1
+    var isOnlyLocal = false
     private val executor = Executors.newFixedThreadPool(3)
 
     override fun serviceRequest(): Observable<List<HistoryData>> {
         allWalletsCmd.currency = currency
+        allWalletsCmd.isLocalOnly = isOnlyLocal
         return allWalletsCmd.execute()
                 .flatMap { getHistoryRequest(it.map { it.address }) }
                 .map { list ->
-                    list.forEach { it.currency = currency }
+                    list.forEach { it.currency = currency.toString() }
                     list
                 }
     }
@@ -52,10 +54,10 @@ class WalletHistoryCmd(
             .observeOn(Schedulers.computation())
             .doOnNext {
                 if (it.isNotEmpty()) {
-                    WalletApplication.dbHelper.setWalletHistory(currency, it)
+                    WalletApplication.dbHelper.setWalletHistory(currency.toString(), it)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletHistoryByCurrency(currency) }
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletHistoryByCurrency(currency.toString()) }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

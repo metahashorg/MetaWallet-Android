@@ -18,7 +18,7 @@ class AllBalancesCmd(
     private val executor = Executors.newFixedThreadPool(3)
     private val toSimpleWalletMapper = WalletWithBalanceMapper()
 
-    var currency = ""
+    var currency = -1
     var isOnlyLocal = false
 
     override fun serviceRequest(): Observable<List<WalletsData>> {
@@ -65,7 +65,7 @@ class AllBalancesCmd(
                     WalletApplication.dbHelper.setWalletsData(it)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletsDataByCurrency(currency) }
+            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletsDataByCurrency(currency.toString()) }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

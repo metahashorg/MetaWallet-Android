@@ -9,13 +9,13 @@ class BalanceChangedCmd(
         private val allBalances: AllBalancesCmd)
     : BaseCommandWithMapping<Boolean, List<WalletsData>>() {
 
-    var cur = ""
+    var cur = -1
 
     override fun serviceRequest() = allBalances.apply { this.currency = cur }.execute()
 
     override fun afterResponse(response: Observable<List<WalletsData>>): Observable<Boolean> {
         return response.map { remote ->
-            val local = WalletApplication.dbHelper.getWalletsDataByCurrency(cur)
+            val local = WalletApplication.dbHelper.getWalletsDataByCurrency(cur.toString())
             if (local.isEmpty() && remote.isEmpty()) {
                 return@map false
             } else {

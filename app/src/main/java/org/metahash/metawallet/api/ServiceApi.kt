@@ -64,7 +64,7 @@ class ServiceApi(private val api: Api) {
 
     //get wallets by currency and balance for each wallet address
     fun getAllWalletsAndBalance(currency: String, localOnly: Boolean): Observable<String> {
-        walletsCmd.currency = currency
+        walletsCmd.currency = currency.toInt()
         walletsCmd.isOnlyLocal = localOnly
         return walletsCmd.executeWithCache()
     }
@@ -74,8 +74,9 @@ class ServiceApi(private val api: Api) {
         return balanceCmd.execute()
     }
 
-    fun getHistory(currency: String): Observable<String> {
-        allHistoryCmd.currency = currency
+    fun getHistory(currency: String, localOnly: Boolean): Observable<String> {
+        allHistoryCmd.currency = currency.toInt()
+        allHistoryCmd.isOnlyLocal = localOnly
         return allHistoryCmd.executeWithCache()
     }
 
@@ -182,7 +183,7 @@ class ServiceApi(private val api: Api) {
     }
 
     fun isBalanceChanged(currency: String): Observable<Boolean> {
-        checkBalanceCmd.cur = currency
+        checkBalanceCmd.cur = currency.toInt()
         return checkBalanceCmd.execute()
     }
 
