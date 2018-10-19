@@ -13,6 +13,7 @@ data class Wallet(
     var name = ""
     var isSynchronized = false
     var userLogin = ""
+    var password = ""
 }
 
 data class WalletPrivateKey(

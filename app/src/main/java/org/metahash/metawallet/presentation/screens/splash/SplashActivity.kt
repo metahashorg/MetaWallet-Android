@@ -223,6 +223,7 @@ class SplashActivity : BaseActivity() {
             wallet.code = code
             wallet.name = name
             wallet.userLogin = WalletApplication.dbHelper.getLogin()
+            wallet.password = password
             //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
             //sync wallet
@@ -244,6 +245,11 @@ class SplashActivity : BaseActivity() {
             //send error here
             JsFunctionCaller.callFunction(webView,
                     JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "NO_PRIVATE_KEY_FOUND")
+            return
+        }
+        if (wallet.password != password) {
+            JsFunctionCaller.callFunction(webView,
+                    JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "WRONG_PASSWORD")
             return
         }
         addSubscription(WalletApplication.api.getBalance(wallet.address)
@@ -333,7 +339,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun startBalancesObserving() {
-/*        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
+        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
                 .switchMap {
                     WalletApplication.api.isBalanceChanged("1")
                 }
@@ -347,11 +353,14 @@ class SplashActivity : BaseActivity() {
                         {
                             it.printStackTrace()
                         }
-                ))*/
+                ))
     }
 
     private fun getPrivateKyByAddress(address: String, password: String): String {
         val wallet = WalletApplication.dbHelper.getUserWalletByAddress(address) ?: return ""
+        if (wallet.password != password) {
+            return ""
+        }
         return CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
     }
 }
