@@ -2,11 +2,9 @@ package org.metahash.metawallet.presentation.screens.splash
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.observers.DisposableObserver
@@ -39,7 +37,6 @@ class SplashActivity : BaseActivity() {
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
         ping()
-        //WalletApplication.api.getBalance("0x00a09cec7588af57ac9e42e5b6a30a392d81b02855814301aa")
     }
 
     @SuppressLint("SetJavaScriptEnabled")
