@@ -1,6 +1,8 @@
 package org.metahash.metawallet
 
 import android.app.Application
+import android.content.Context
+import android.provider.Settings
 import android.support.multidex.MultiDexApplication
 import com.google.gson.Gson
 import com.orhanobut.hawk.Hawk
@@ -20,9 +22,14 @@ import java.util.concurrent.TimeUnit
 class WalletApplication : MultiDexApplication() {
 
     companion object {
+        lateinit var appContext: Context
         val dbHelper: DBHelper by lazy { DBHelper() }
         val api: ServiceApi by lazy { initApi() }
         val gson = Gson()
+        val deviceId by lazy {
+            Settings.Secure.getString(WalletApplication.appContext.contentResolver,
+                    Settings.Secure.ANDROID_ID)
+        }
 
         private fun initApi(): ServiceApi {
             return ServiceApi(createRetrofit().create(Api::class.java))
@@ -54,5 +61,6 @@ class WalletApplication : MultiDexApplication() {
         } catch (ex: Exception) {
             ex.printStackTrace()
         }
+        appContext = this
     }
 }

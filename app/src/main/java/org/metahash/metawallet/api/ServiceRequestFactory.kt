@@ -116,42 +116,53 @@ object ServiceRequestFactory {
 
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
-    private fun createLoginRequest(params: Any) = ServiceRequest(method = METHOD_LOGIN, params = params)
+    private fun createLoginRequest(params: Any) = ServiceRequest(
+            method = METHOD_LOGIN, params = params,
+            uid = WalletApplication.deviceId)
 
-    private fun createRegisterRequest(params: Any) = ServiceRequest(method = METHOD_REGISTER, params = params)
+    private fun createRegisterRequest(params: Any) = ServiceRequest(
+            method = METHOD_REGISTER, params = params,
+            uid = WalletApplication.deviceId)
 
     private fun createWalletsRequest(params: Any) = ServiceRequest(
             method = METHOD_ALL_WALLETS,
             params = params,
-            token = WalletApplication.dbHelper.getToken())
+            token = WalletApplication.dbHelper.getToken(),
+            uid = WalletApplication.deviceId)
 
     private fun createBalanceRequest(params: Any) = ServiceRequest(
             method = METHOD_WALLET_BALANCE,
-            params = params)
+            params = params,
+            uid = WalletApplication.deviceId)
 
     private fun createHistoryRequest(params: Any) = ServiceRequest(
             method = METHOD_WALLET_HISTORY,
-            params = params
+            params = params,
+            uid = WalletApplication.deviceId
     )
 
     private fun createRefreshRequest() = ServiceRequest(
             method = METHOD_REFRESH_TOKEN,
-            token = WalletApplication.dbHelper.getRefreshToken())
+            token = WalletApplication.dbHelper.getRefreshToken(),
+            uid = WalletApplication.deviceId)
 
     private fun createTransactionRequest(params: Any) = ServiceRequest(
             method = METHOD_CREATE_TX,
             params = params,
-            jsonrpc = "2.0")
+            jsonrpc = "2.0",
+            uid = WalletApplication.deviceId)
 
     private fun createTxInfoRequest(params: Any) = ServiceRequest(
             method = METHOD_TX_INFO,
-            params = params
+            params = params,
+            uid = WalletApplication.deviceId
     )
 
     private fun createSyncWalletRequest(params: Any) = ServiceRequest(
             method = METHOD_SYNC_WALLET,
             params = params,
-            token = WalletApplication.dbHelper.getToken()
+            token = WalletApplication.dbHelper.getToken(),
+            uid = WalletApplication.deviceId
     )
 
     enum class REQUESTTYPE {
