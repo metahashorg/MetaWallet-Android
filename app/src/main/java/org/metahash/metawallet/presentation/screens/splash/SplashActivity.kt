@@ -1,10 +1,13 @@
 package org.metahash.metawallet.presentation.screens.splash
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.view.View
+import android.webkit.*
+import android.widget.TextView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.observers.DisposableObserver
@@ -17,10 +20,9 @@ import org.metahash.metawallet.api.JsFunctionCaller
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.CreateTxResult
 import org.metahash.metawallet.data.models.ResponseError
-import org.metahash.metawallet.extensions.CryptoExt
-import org.metahash.metawallet.extensions.enableInspection
-import org.metahash.metawallet.extensions.fromUI
+import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
+import java.security.PrivateKey
 import java.util.concurrent.TimeUnit
 
 
@@ -28,12 +30,16 @@ class SplashActivity : BaseActivity() {
 
     private val MAX_INFO_TRY_COUNT = 5L
 
-    private lateinit var webView: WebView
+    private val webView by bind<WebView>(R.id.wv)
+    private val vLoading by bind<View>(R.id.vLoading)
+    private val tvLoading by bind<TextView>(R.id.tv1)
+    private val tvError by bind<View>(R.id.tv2)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
-        webView = findViewById(R.id.wv)
+        showLoadingOrError()
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
         ping()
@@ -43,7 +49,7 @@ class SplashActivity : BaseActivity() {
     private fun initWebView() {
         webView.settings.javaScriptEnabled = true
         webView.enableInspection()
-        webView.webViewClient = WebViewClient()
+        webView.webViewClient = ChromeClient()
         webView.webChromeClient = WebChromeClient()
         registerJSCallbacks()
     }
@@ -119,7 +125,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun register(login: String, password: String) {
-        WalletApplication.api.register(login, password)
+        addSubscription(WalletApplication.api.register(login, password)
                 .subscribe(
                         {
                             if (it.isOk()) {
@@ -133,7 +139,7 @@ class SplashActivity : BaseActivity() {
                         {
                             handleRegisterResponseError(it, webView)
                         }
-                )
+                ))
     }
 
     private fun ping() {
@@ -186,16 +192,16 @@ class SplashActivity : BaseActivity() {
         addSubscription(
                 WalletApplication.api.getAllWalletsAndBalance(
                         currency, WalletApplication.dbHelper.isOnlyLocalWallets())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            JsFunctionCaller.callFunction(webView,
-                                    JsFunctionCaller.FUNCTION.WALLETSRESULT, it)
-                        },
-                        {
-                            handleCommonError(it, webView)
-                        }
-                ))
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                {
+                                    JsFunctionCaller.callFunction(webView,
+                                            JsFunctionCaller.FUNCTION.WALLETSRESULT, it)
+                                },
+                                {
+                                    handleCommonError(it, webView)
+                                }
+                        ))
     }
 
     private fun getHistory(currency: String) {
@@ -359,5 +365,63 @@ class SplashActivity : BaseActivity() {
             return ""
         }
         return CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
+    }
+
+    private fun showLoadingOrError(show: Boolean = true, loading: Boolean = true) {
+        if (!show) {
+            vLoading.makeGone()
+            return
+        }
+
+        vLoading.makeVisible()
+        if (loading) {
+            tvLoading.text = getString(R.string.loading)
+            tvError.makeGone()
+        } else {
+            tvLoading.text = getString(R.string.loading_error)
+            tvError.makeVisible()
+        }
+    }
+
+    override fun onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    private inner class ChromeClient : WebViewClient() {
+
+        private var mHasErrors = false
+        override fun onPageFinished(view: WebView?, url: String?) {
+            super.onPageFinished(view, url)
+            if (!mHasErrors) {
+                fromUI({ showLoadingOrError(show = false) })
+            }
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            mHasErrors = false
+        }
+
+        @TargetApi(Build.VERSION_CODES.M)
+        override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+            super.onReceivedError(view, request, error)
+            mHasErrors = true
+            if (isConnected().not()) {
+                fromUI({ showLoadingOrError(loading = false) })
+            }
+        }
+
+        @Suppress("OverridingDeprecatedMember", "DEPRECATION")
+        override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+            super.onReceivedError(view, errorCode, description, failingUrl)
+            mHasErrors = true
+            if (isConnected().not()) {
+                fromUI({ showLoadingOrError(loading = false) })
+            }
+        }
     }
 }

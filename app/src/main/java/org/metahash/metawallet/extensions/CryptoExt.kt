@@ -5,13 +5,20 @@ import org.metahash.metawallet.data.models.Transaction
 import org.metahash.metawallet.data.models.Wallet
 import org.metahash.metawallet.data.models.WalletPrivateKey
 import org.spongycastle.asn1.pkcs.PrivateKeyInfo
+import org.spongycastle.asn1.sec.ECPrivateKey
 import org.spongycastle.crypto.digests.RIPEMD160Digest
 import org.spongycastle.crypto.digests.SHA256Digest
+import org.spongycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey
+import org.spongycastle.jce.ECNamedCurveTable
+import org.spongycastle.jce.spec.ECParameterSpec
+import org.spongycastle.jce.spec.ECPublicKeySpec
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 import java.security.*
 import java.security.spec.ECGenParameterSpec
+import java.security.spec.ECPrivateKeySpec
+import java.security.spec.PKCS8EncodedKeySpec
 import java.util.*
 
 object CryptoExt {
@@ -85,11 +92,27 @@ object CryptoExt {
         }.sign()
     }
 
+    fun derivePublicKeyFromPrivate(privKey: PrivateKey): String {
+        try {
+            val kf = KeyFactory.getInstance("ECDSA", "SC")
+            val privKeyFormatted = kf.generatePrivate(PKCS8EncodedKeySpec(privKey.encoded)) as BCECPrivateKey
+            val spec = ECNamedCurveTable.getParameterSpec("secp256k1")
+            val q = spec.g.multiply(privKeyFormatted.d)
+            val pubSpec = ECPublicKeySpec(q, spec)
+            val publicKeyGenerated = kf.generatePublic(pubSpec)
+            return publicKeyToHex(publicKeyGenerated.encoded)
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+        return ""
+    }
+
     private fun generateKeyPair(): KeyPair? {
         try {
             val keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "SC")
             val spec = ECGenParameterSpec("secp256k1")
             keyPairGenerator.initialize(spec, SecureRandom())
+            keyPairGenerator.genKeyPair()
             return keyPairGenerator.generateKeyPair()
         } catch (ex: Exception) {
             ex.printStackTrace()
