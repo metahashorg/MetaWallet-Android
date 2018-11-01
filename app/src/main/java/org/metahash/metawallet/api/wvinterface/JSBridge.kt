@@ -15,7 +15,8 @@ class JSBridge(
         private val setOnlyLocal: (Boolean) -> Unit,
         private val getOnlyLocal: () -> Boolean,
         private val onGetPrivateKey: (String, String) -> String,
-        private val onGetAppVersion: () -> String) {
+        private val onGetAppVersion: () -> String,
+        private val onStartQr: () -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -71,4 +72,9 @@ class JSBridge(
 
     @JavascriptInterface
     fun getAppVersion(): String = onGetAppVersion.invoke()
+
+    @JavascriptInterface
+    fun startQRImport() {
+        onStartQr.invoke()
+    }
 }

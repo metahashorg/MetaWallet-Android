@@ -117,7 +117,7 @@ class DBHelper {
     }
 
     //user wallets
-    private fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
+    fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
     fun setUserWallet(wallet: Wallet) {
         val data = getUserWallets()

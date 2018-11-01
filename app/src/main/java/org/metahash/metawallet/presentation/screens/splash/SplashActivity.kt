@@ -1,10 +1,17 @@
 package org.metahash.metawallet.presentation.screens.splash
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.annotation.TargetApi
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
+import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
@@ -19,9 +26,16 @@ import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.CreateTxResult
+import org.metahash.metawallet.data.models.ResolvingResult
 import org.metahash.metawallet.data.models.ResponseError
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
+import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
+import org.spongycastle.crypto.engines.AESEngine
+import org.spongycastle.crypto.modes.CBCBlockCipher
+import org.spongycastle.crypto.paddings.PaddedBufferedBlockCipher
+import org.spongycastle.crypto.params.KeyParameter
+import org.spongycastle.crypto.params.ParametersWithIV
 import java.security.PrivateKey
 import java.util.concurrent.TimeUnit
 
@@ -29,6 +43,8 @@ import java.util.concurrent.TimeUnit
 class SplashActivity : BaseActivity() {
 
     private val MAX_INFO_TRY_COUNT = 5L
+    private val REQUEST_READ_KEY = 112
+    private val REQUEST_CAMERA_PERM = 113
 
     private val webView by bind<WebView>(R.id.wv)
     private val vLoading by bind<View>(R.id.vLoading)
@@ -52,6 +68,40 @@ class SplashActivity : BaseActivity() {
         webView.webViewClient = ChromeClient()
         webView.webChromeClient = WebChromeClient()
         registerJSCallbacks()
+    }
+
+    private fun openQrScanner() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            startActivityForResult(Intent(this, QrReaderActivity::class.java), REQUEST_READ_KEY)
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    arrayOf(Manifest.permission.CAMERA),
+                    REQUEST_CAMERA_PERM)
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CAMERA_PERM) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openQrScanner()
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == REQUEST_READ_KEY) {
+                val result = data?.getStringExtra("data") ?: ""
+                if (result.isNotEmpty()) {
+                    importWalletByPrivateKey(result)
+                } else {
+                    //error while reading qr
+                }
+            }
+        }
     }
 
     @SuppressLint("AddJavascriptInterface")
@@ -85,7 +135,9 @@ class SplashActivity : BaseActivity() {
                         //method to get private key
                         { address, password -> getPrivateKyByAddress(address, password) },
                         //get app version
-                        { BuildConfig.VERSION_NAME }
+                        { BuildConfig.VERSION_NAME },
+                        //start reading qr code
+                        { openQrScanner() }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -143,49 +195,63 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun ping() {
+        val obs = object : DisposableObserver<String>() {
+            override fun onComplete() {
+                val info = WalletApplication.gson.toJson(ResolvingResult(3))
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.UPDATERESOLVING, info)
+                WalletApplication.api.saveProxy()
+                refreshToken()
+            }
+
+            override fun onNext(t: String) {
+                Log.d("MIINE", t)
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.UPDATERESOLVING, t)
+            }
+
+            override fun onError(e: Throwable) {
+                e.printStackTrace()
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.ONIPREADY, false)
+            }
+        }
         addSubscription(WalletApplication.api.ping()
-                .flatMap {
-                    if (it.not()) {
-                        return@flatMap Observable.just("")
-                    }
-                    if (WalletApplication.dbHelper.hasToken()) {
-                        //refresh token and return token
-                        WalletApplication.api.refreshToken()
-                                .map {
-                                    //if refresh is ok, return new token
-                                    if (it.isOk()) {
-                                        WalletApplication.dbHelper
-                                                .setToken(it.data.token)
-                                        WalletApplication.dbHelper
-                                                .setRefreshToken(it.data.refreshToken)
-                                        it.data.token
-                                    } else {
-                                        //else return empty one
-                                        ""
-                                    }
-                                }
-                    } else {
-                        //no user token, return empty
-                        Observable.just("")
-                    }
-                }
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            if (it.isEmpty()) {
+                .subscribeWith(obs))
+    }
+
+    private fun refreshToken() {
+        if (WalletApplication.dbHelper.hasToken()) {
+            //refresh token and return token
+            addSubscription(WalletApplication.api.refreshToken()
+                    .subscribe(
+                            {
+                                if (it.isOk()) {
+                                    WalletApplication.dbHelper
+                                            .setToken(it.data.token)
+                                    WalletApplication.dbHelper
+                                            .setRefreshToken(it.data.refreshToken)
+
+                                    JsFunctionCaller.callFunction(webView,
+                                            JsFunctionCaller.FUNCTION.ONIPREADY, true)
+                                    checkUnsynchronizedWallets()
+                                    startBalancesObserving()
+                                } else {
+                                    JsFunctionCaller.callFunction(webView,
+                                            JsFunctionCaller.FUNCTION.ONIPREADY, false)
+                                }
+                            },
+                            {
                                 JsFunctionCaller.callFunction(webView,
                                         JsFunctionCaller.FUNCTION.ONIPREADY, false)
-                            } else {
-                                JsFunctionCaller.callFunction(webView,
-                                        JsFunctionCaller.FUNCTION.ONIPREADY, true)
-                                checkUnsynchronizedWallets()
-                                startBalancesObserving()
+                                it.printStackTrace()
                             }
-                        },
-                        {
-                            handleLoginResponseError(it, webView)
-                        }
-                ))
+                    ))
+        } else {
+            JsFunctionCaller.callFunction(webView,
+                    JsFunctionCaller.FUNCTION.ONIPREADY, false)
+        }
     }
 
     private fun getWallets(currency: String) {
@@ -365,6 +431,14 @@ class SplashActivity : BaseActivity() {
             return ""
         }
         return CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
+    }
+
+    private fun importWalletByPrivateKey(key: String) {
+        val bytes = key.toUpperCase().hexStringToByteArray()
+        val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
+        if (wallet != null) {
+
+        }
     }
 
     private fun showLoadingOrError(show: Boolean = true, loading: Boolean = true) {

@@ -48,6 +48,8 @@ object JsFunctionCaller {
         NEWWALLERRESULT("createAddressResult"),
         TRASACTIONRESULT("sendTMHTxResult"),
         TXINFORESULT("onTxChecked"),
-        ONDATACHANGED("onDataRefreshed")
+        ONDATACHANGED("onDataRefreshed"),
+        SAVEIMPORTEDWALLET("saveImportedWallet"),
+        UPDATERESOLVING("updateConnectingStatus")
     }
 }

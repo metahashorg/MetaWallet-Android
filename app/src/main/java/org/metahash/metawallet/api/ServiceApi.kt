@@ -16,7 +16,7 @@ class ServiceApi(private val api: Api) {
         RegisterCmd(api)
     }
     private val pingCmd by lazy {
-        GetProxyCmd()
+        GetProxyCmd(WalletApplication.gson)
     }
     private val walletsCmd by lazy {
         AllBalancesCmd(allWalletsCmd, balanceCmd)
@@ -170,6 +170,10 @@ class ServiceApi(private val api: Api) {
     }
 
     fun ping() = pingCmd.execute()
+
+    fun saveProxy() {
+        pingCmd.saveProxy()
+    }
 
     fun refreshToken() = refreshTokenCmd.execute()
 

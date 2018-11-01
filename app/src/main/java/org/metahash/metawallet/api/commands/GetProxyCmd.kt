@@ -1,55 +1,77 @@
 package org.metahash.metawallet.api.commands
 
-import android.util.Log
+import com.google.gson.Gson
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
+import org.metahash.metawallet.data.models.Info
 import org.metahash.metawallet.data.models.Proxy
+import org.metahash.metawallet.data.models.ResolvingResult
+import org.metahash.metawallet.data.models.Status
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.util.concurrent.Executors
 
-class GetProxyCmd {
+class GetProxyCmd(
+        private val gson: Gson
+) {
 
+    private val avg = "avg"
+    private val averageRegEx = "[0-9]+.[0-9]+".toRegex()
     private val MAX_PROXY_COUNT = 3
     private val executor = Executors.newFixedThreadPool(2)
 
-    fun execute(): Observable<Boolean> {
+    val proxyList = mutableListOf<Proxy>()
+    val torrentLis = mutableListOf<Proxy>()
+
+    fun execute(): Observable<String> {
+        proxyList.clear()
+        torrentLis.clear()
         return Observable.combineLatest(
-                getPingObs(Constants.URL_PROXY_DEV),
-                getPingObs(Constants.URL_TORRENT_DEV),
-                BiFunction<List<Proxy>, List<Proxy>, Boolean> { proxy, torrent ->
-                    Log.d("MIINE", "proxy = ${proxy.size}; torrent = ${torrent.size}")
-                    if (proxy.isNotEmpty()) {
-                        if (proxy.size <= MAX_PROXY_COUNT) {
-                            WalletApplication.dbHelper.setProxy(proxy)
-                        } else {
-                            WalletApplication.dbHelper.setProxy(proxy.subList(0, MAX_PROXY_COUNT))
-                        }
-                    }
-                    if (torrent.isNotEmpty()) {
-                        if (torrent.size <= MAX_PROXY_COUNT) {
-                            WalletApplication.dbHelper.setTorrent(torrent)
-                        } else {
-                            WalletApplication.dbHelper.setTorrent(torrent.subList(0, MAX_PROXY_COUNT))
-                        }
-                    }
-                    proxy.isNotEmpty() && torrent.isNotEmpty()
-                }
-        )
+                getResolveObserver(Constants.URL_PROXY_DEV),
+                getResolveObserver(Constants.URL_TORRENT_DEV, false),
+                BiFunction<Info, Info, ResolvingResult>
+                { proxy, torrent -> ResolvingResult(proxy, torrent) }
+        ).map { resultToString(it) }
     }
 
-    private fun getPingObs(address: String): Observable<List<Proxy>> {
-        return Observable.fromCallable {
-            try {
-                val ips = InetAddress.getAllByName(address)
-                val avg = "avg"
-                val regEx = "[0-9]+.[0-9]+".toRegex()
-                val result = mutableListOf<Proxy>()
-                ips.forEach {
+    fun saveProxy() {
+        proxyList.sortBy { it.ping }
+        torrentLis.sortBy { it.ping }
+        if (proxyList.isNotEmpty()) {
+            if (proxyList.size <= MAX_PROXY_COUNT) {
+                WalletApplication.dbHelper.setProxy(proxyList)
+            } else {
+                WalletApplication.dbHelper.setProxy(proxyList.subList(0, MAX_PROXY_COUNT))
+            }
+        }
+        if (torrentLis.isNotEmpty()) {
+            if (torrentLis.size <= MAX_PROXY_COUNT) {
+                WalletApplication.dbHelper.setTorrent(torrentLis)
+            } else {
+                WalletApplication.dbHelper.setTorrent(torrentLis.subList(0, MAX_PROXY_COUNT))
+            }
+        }
+    }
+
+    private fun resultToString(result: ResolvingResult) = gson.toJson(result)
+
+    private fun getResolveObserver(address: String, isProxy: Boolean = true): Observable<Info> {
+        return Observable.fromCallable { InetAddress.getAllByName(address).toMutableList() }
+                .flatMap {
+                    getPingObs(it, isProxy)
+                            .startWith(Info(it.size))
+                }
+                .subscribeOn(Schedulers.from(executor))
+                .startWith(Info())
+    }
+
+    private fun getPingObs(ips: MutableList<InetAddress>, isProxy: Boolean): Observable<Info> {
+        return Observable.fromIterable(ips.toMutableList())
+                .map {
                     try {
                         val ip = it.hostAddress
                         val process = Runtime.getRuntime().exec("/system/bin/ping -c 1 $ip")
@@ -57,9 +79,13 @@ class GetProxyCmd {
                         BufferedReader(InputStreamReader(process.inputStream)).use {
                             it.lineSequence().forEach {
                                 if (it.toLowerCase().indexOf(avg.toLowerCase()) != -1) {
-                                    val matches = regEx.findAll(it).toList()
+                                    val matches = averageRegEx.findAll(it).toList()
                                     if (matches.size == 4) {
-                                        result.add(Proxy(ip, matches[1].value.toDouble()))
+                                        if (isProxy) {
+                                            proxyList.add(Proxy(ip, matches[1].value.toDouble()))
+                                        } else {
+                                            torrentLis.add(Proxy(ip, matches[1].value.toDouble()))
+                                        }
                                     }
                                 }
                             }
@@ -67,13 +93,7 @@ class GetProxyCmd {
                     } catch (ex: Exception) {
                         ex.printStackTrace()
                     }
+                    return@map Info(2, Status(ips.size, if (isProxy) proxyList.size else torrentLis.size))
                 }
-                return@fromCallable result.sortedWith(compareBy { it.ping })
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
-            return@fromCallable listOf<Proxy>()
-
-        }.subscribeOn(Schedulers.from(executor))
     }
 }
