@@ -9,7 +9,9 @@ import org.spongycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.spongycastle.asn1.pkcs.PrivateKeyInfo
 import org.spongycastle.asn1.pkcs.RSAPrivateKey
 import org.spongycastle.asn1.sec.ECPrivateKey
+import org.spongycastle.asn1.sec.SECObjectIdentifiers
 import org.spongycastle.asn1.x509.AlgorithmIdentifier
+import org.spongycastle.asn1.x9.X9ObjectIdentifiers
 import org.spongycastle.crypto.digests.RIPEMD160Digest
 import org.spongycastle.crypto.digests.SHA256Digest
 import org.spongycastle.crypto.util.PrivateKeyInfoFactory
@@ -52,19 +54,20 @@ object CryptoExt {
         return null
     }
 
-    fun createWalletFromPrivateKey(privKeyString: ByteArray): Wallet? {
+    fun createWalletFromPrivateKey(pkcs1Bytes: ByteArray): Wallet? {
         try {
+            //original key
+            val pkcs8Bytes = pkcs1ToPkcs8(pkcs1Bytes)
+            //factory
             val kf = KeyFactory.getInstance("ECDSA", "SC")
-            val privKeyFormatted = createPrivateKeyFromBytes(privKeyString, kf)
+            val privKeyFormatted = createPrivateKeyFromBytes(pkcs8Bytes, kf)
             val pubKey = derivePublicKeyFromPrivate(privKeyFormatted, kf)
 
-            val privKeyBytes = privKeyFormatted.encoded
-            val privKey = convertPrivateKeyToPKCS1(privKeyBytes)
             val address = generateHexAddress(Arrays.copyOfRange(
                     pubKey,
                     pubKey.size - 65,
                     pubKey.size)).toLowerCase()
-            return Wallet(address, pubKey, privKey, WalletPrivateKey(
+            return Wallet(address, pubKey, pkcs1Bytes, WalletPrivateKey(
                     privKeyFormatted.algorithm,
                     privKeyFormatted.format,
                     privKeyFormatted.encoded
@@ -75,8 +78,27 @@ object CryptoExt {
         return null
     }
 
+    /**
+     * create private key from byte array
+     */
     private fun createPrivateKeyFromBytes(key: ByteArray, kf: KeyFactory): BCECPrivateKey {
         return kf.generatePrivate(PKCS8EncodedKeySpec(key)) as BCECPrivateKey
+    }
+
+    /**
+     * convert PKCS#1 key to PKCS#8 key
+     */
+    private fun pkcs1ToPkcs8(pkcs1Bytes: ByteArray): ByteArray {
+        try {
+            val prim = ASN1Primitive.fromByteArray(pkcs1Bytes)
+            val keyInfo = PrivateKeyInfo(AlgorithmIdentifier(
+                    X9ObjectIdentifiers.id_ecPublicKey,
+                    SECObjectIdentifiers.secp256k1), prim)
+            return keyInfo.encoded
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+        return byteArrayOf(0)
     }
 
     /**
@@ -123,6 +145,9 @@ object CryptoExt {
         }.sign()
     }
 
+    /**
+     * get public key form private
+     */
     private fun derivePublicKeyFromPrivate(privKeyFormatted: BCECPrivateKey, kf: KeyFactory): ByteArray {
         try {
             val spec = ECNamedCurveTable.getParameterSpec("secp256k1")

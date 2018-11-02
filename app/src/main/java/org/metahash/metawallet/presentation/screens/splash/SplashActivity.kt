@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
+import android.widget.Toast
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.observers.DisposableObserver
@@ -99,6 +100,7 @@ class SplashActivity : BaseActivity() {
                     importWalletByPrivateKey(result)
                 } else {
                     //error while reading qr
+                    Toast.makeText(this, "Error while reading QR code", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -137,7 +139,9 @@ class SplashActivity : BaseActivity() {
                         //get app version
                         { BuildConfig.VERSION_NAME },
                         //start reading qr code
-                        { openQrScanner() }
+                        { fromUI({ openQrScanner() }) },
+                        //create wallet from import
+                        { a, k, p, c, code -> importWalletFromParams(k, p, c, code)}
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -437,7 +441,27 @@ class SplashActivity : BaseActivity() {
         val bytes = key.toUpperCase().hexStringToByteArray()
         val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
         if (wallet != null) {
+            JsFunctionCaller.callFunction(webView,
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET, key, wallet.address)
+        }
+    }
 
+    private fun importWalletFromParams(privKey: String,
+                                       password: String, currency: String, code: String) {
+        val bytes = privKey.toUpperCase().hexStringToByteArray()
+        val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
+        if (wallet != null) {
+            wallet.currency = currency
+            wallet.code = code
+            wallet.userLogin = WalletApplication.dbHelper.getLogin()
+            wallet.password = password
+            //save wallet
+            WalletApplication.dbHelper.setUserWallet(wallet)
+            //sync wallet
+            syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
+            fromUI({
+                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address)
+            })
         }
     }
 

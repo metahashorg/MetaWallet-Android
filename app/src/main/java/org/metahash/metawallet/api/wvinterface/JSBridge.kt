@@ -1,5 +1,6 @@
 package org.metahash.metawallet.api.wvinterface
 
+import android.util.Log
 import android.webkit.JavascriptInterface
 import kotlin.math.log
 
@@ -16,7 +17,8 @@ class JSBridge(
         private val getOnlyLocal: () -> Boolean,
         private val onGetPrivateKey: (String, String) -> String,
         private val onGetAppVersion: () -> String,
-        private val onStartQr: () -> Unit) {
+        private val onStartQr: () -> Unit,
+        private val onImport: (String, String, String, String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -76,5 +78,10 @@ class JSBridge(
     @JavascriptInterface
     fun startQRImport() {
         onStartQr.invoke()
+    }
+
+    @JavascriptInterface
+    fun importWallet(address: String, privKey: String, password: String, currency: String, currency_code: String) {
+        onImport.invoke(address, privKey, password, currency, currency_code)
     }
 }
