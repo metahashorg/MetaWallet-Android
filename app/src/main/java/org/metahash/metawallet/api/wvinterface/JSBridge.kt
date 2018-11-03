@@ -18,7 +18,7 @@ class JSBridge(
         private val onGetPrivateKey: (String, String) -> String,
         private val onGetAppVersion: () -> String,
         private val onStartQr: () -> Unit,
-        private val onImport: (String, String, String, String, String) -> Unit) {
+        private val onImport: (String, String, String, String, String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -81,7 +81,8 @@ class JSBridge(
     }
 
     @JavascriptInterface
-    fun importWallet(address: String, privKey: String, password: String, currency: String, currency_code: String) {
-        onImport.invoke(address, privKey, password, currency, currency_code)
+    fun importWallet(address: String, privKey: String, password: String,
+                     currency: String, currency_code: String, name: String) {
+        onImport.invoke(address, privKey, password, currency, currency_code, name)
     }
 }

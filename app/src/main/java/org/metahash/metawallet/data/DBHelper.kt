@@ -117,7 +117,7 @@ class DBHelper {
     }
 
     //user wallets
-    fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
+    private fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
     fun setUserWallet(wallet: Wallet) {
         val data = getUserWallets()
@@ -125,16 +125,16 @@ class DBHelper {
         Hawk.put(KEY_USER_WALLETS, data)
     }
 
-    private fun updateUserWallet(wallet: Wallet) {
+    fun updateUserWallet(wallet: Wallet, userLogin: String) {
         val data = getUserWallets()
-        data.removeAll { it.address == wallet.address }
+        data.removeAll { it.address == wallet.address || it.userLogin == userLogin}
         data.add(wallet)
         Hawk.put(KEY_USER_WALLETS, data)
     }
 
-    fun getUserWalletByAddress(address: String): Wallet? {
+    fun getUserWalletByAddress(address: String, userLogin: String): Wallet? {
         return getUserWallets()
-                .firstOrNull { it.address == address }
+                .firstOrNull { it.address == address && it.userLogin == userLogin }
     }
 
     fun getUserWalletsByCurrency(currency: String, userLogin: String): List<Wallet> {
@@ -143,15 +143,17 @@ class DBHelper {
                 .filter { it.userLogin == userLogin }
     }
 
-    fun setWalletSynchronized(address: String) {
-        val wallet = getUserWalletByAddress(address) ?: return
+    fun setWalletSynchronized(address: String, userLogin: String) {
+        val wallet = getUserWalletByAddress(address, userLogin) ?: return
         wallet.isSynchronized = true
-        updateUserWallet(wallet)
+        updateUserWallet(wallet, userLogin)
     }
 
-    fun getUnsynchonizedWallets(): List<Wallet> {
+    fun getUnsynchonizedWallets(userLogin: String): List<Wallet> {
         val data = getUserWallets()
-        return data.filter { it.isSynchronized.not() }
+        return data
+                .filter { it.userLogin == userLogin }
+                .filter { it.isSynchronized.not() }
     }
 
     fun setOnlyLocalWallets(onlyLocal: Boolean) {

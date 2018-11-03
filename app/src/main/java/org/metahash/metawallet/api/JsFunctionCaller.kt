@@ -50,6 +50,7 @@ object JsFunctionCaller {
         TXINFORESULT("onTxChecked"),
         ONDATACHANGED("onDataRefreshed"),
         SAVEIMPORTEDWALLET("saveImportedWallet"),
-        UPDATERESOLVING("updateConnectingStatus")
+        UPDATERESOLVING("updateConnectingStatus"),
+        IMPORTRESULT("importWalletResult")
     }
 }

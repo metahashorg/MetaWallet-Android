@@ -141,7 +141,8 @@ class SplashActivity : BaseActivity() {
                         //start reading qr code
                         { fromUI({ openQrScanner() }) },
                         //create wallet from import
-                        { a, k, p, c, code -> importWalletFromParams(k, p, c, code)}
+                        { a, k, p, c, code, n ->
+                            importWalletFromParams(k, p, c, code, n)}
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -313,7 +314,7 @@ class SplashActivity : BaseActivity() {
 
     private fun createTransaction(from: String, password: String, to: String,
                                   amount: String, fee: String, data: String) {
-        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(from)
+        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(from, WalletApplication.dbHelper.getLogin())
         if (wallet == null) {
             //send error here
             JsFunctionCaller.callFunction(webView,
@@ -379,7 +380,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun checkUnsynchronizedWallets() {
-        val list = WalletApplication.dbHelper.getUnsynchonizedWallets()
+        val list = WalletApplication.dbHelper.getUnsynchonizedWallets(WalletApplication.dbHelper.getLogin())
         list.forEach {
             syncWallet(
                     it.address,
@@ -394,7 +395,7 @@ class SplashActivity : BaseActivity() {
                         {
                             if (it.isOk()) {
                                 //update wallet
-                                WalletApplication.dbHelper.setWalletSynchronized(address)
+                                WalletApplication.dbHelper.setWalletSynchronized(address, WalletApplication.dbHelper.getLogin())
                             }
                         },
                         {
@@ -403,7 +404,7 @@ class SplashActivity : BaseActivity() {
                                 if (it.code.contains("exists", true) ||
                                         it.message?.contains("exists", true) == true) {
                                     //update wallet
-                                    WalletApplication.dbHelper.setWalletSynchronized(address)
+                                    WalletApplication.dbHelper.setWalletSynchronized(address, WalletApplication.dbHelper.getLogin())
                                 }
                             }
                             it.printStackTrace()
@@ -430,7 +431,8 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getPrivateKyByAddress(address: String, password: String): String {
-        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(address) ?: return ""
+        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(address,
+                WalletApplication.dbHelper.getLogin()) ?: return ""
         if (wallet.password != password) {
             return ""
         }
@@ -447,20 +449,30 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun importWalletFromParams(privKey: String,
-                                       password: String, currency: String, code: String) {
+                                       password: String, currency: String,
+                                       code: String, name: String) {
         val bytes = privKey.toUpperCase().hexStringToByteArray()
         val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
         if (wallet != null) {
+            wallet.name = name
             wallet.currency = currency
             wallet.code = code
             wallet.userLogin = WalletApplication.dbHelper.getLogin()
             wallet.password = password
-            //save wallet
-            WalletApplication.dbHelper.setUserWallet(wallet)
-            //sync wallet
-            syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
+
+            //check if such a wallet exists
+            val userWallet = WalletApplication.dbHelper.getUserWalletByAddress(wallet.address,
+                    WalletApplication.dbHelper.getLogin())
+            if (userWallet == null) {
+                //save wallet
+                WalletApplication.dbHelper.setUserWallet(wallet)
+                //sync wallet
+                syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
+            } else {
+                WalletApplication.dbHelper.updateUserWallet(wallet, WalletApplication.dbHelper.getLogin())
+            }
             fromUI({
-                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address)
+                JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.IMPORTRESULT, wallet.address)
             })
         }
     }
