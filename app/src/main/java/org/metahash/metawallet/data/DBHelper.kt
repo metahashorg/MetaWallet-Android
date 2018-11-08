@@ -127,7 +127,7 @@ class DBHelper {
 
     fun updateUserWallet(wallet: Wallet, userLogin: String) {
         val data = getUserWallets()
-        data.removeAll { it.address == wallet.address || it.userLogin == userLogin}
+        data.removeAll { it.address == wallet.address && it.userLogin == userLogin}
         data.add(wallet)
         Hawk.put(KEY_USER_WALLETS, data)
     }
