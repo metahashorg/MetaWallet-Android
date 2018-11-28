@@ -32,6 +32,7 @@ import org.metahash.metawallet.data.models.ResponseError
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
+import org.metahash.metawallet.presentation.views.TouchWebView
 import org.spongycastle.crypto.engines.AESEngine
 import org.spongycastle.crypto.modes.CBCBlockCipher
 import org.spongycastle.crypto.paddings.PaddedBufferedBlockCipher
@@ -47,7 +48,7 @@ class SplashActivity : BaseActivity() {
     private val REQUEST_READ_KEY = 112
     private val REQUEST_CAMERA_PERM = 113
 
-    private val webView by bind<WebView>(R.id.wv)
+    private val webView by bind<TouchWebView>(R.id.wv)
     private val vLoading by bind<View>(R.id.vLoading)
     private val tvLoading by bind<TextView>(R.id.tv1)
     private val tvError by bind<View>(R.id.tv2)

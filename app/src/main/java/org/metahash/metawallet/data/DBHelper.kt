@@ -14,9 +14,11 @@ class DBHelper {
     private val KEY_WALLET_HISTORY = "key_wallet_history"
     private val KEY_USER_WALLETS = "key_user_wallets"
     private val KEY_ONLY_LOCAL_WALLETS = "key_only_local_wallets"
+    private val KEY_USER_PINCODE = "key_user_pincode"
 
     fun clearAll() {
         Hawk.delete(KEY_TOKEN)
+        deleteUserPincode(getLogin())
         Hawk.delete(KEY_LOGIN)
         Hawk.delete(KEY_REFRESH_TOKEN)
         Hawk.delete(KEY_WALLETS)
@@ -161,4 +163,38 @@ class DBHelper {
     }
 
     fun isOnlyLocalWallets() = Hawk.get<Boolean>(KEY_ONLY_LOCAL_WALLETS, false)
+
+    private fun getAllPincodes() = Hawk.get<MutableList<UserPincode>>(KEY_USER_PINCODE, mutableListOf())
+
+    private fun getUserPincode(username: String): UserPincode? {
+        val list = getAllPincodes()
+        return list.firstOrNull { it.username == username }
+    }
+
+    fun checkPincode(code: String, username: String): Boolean {
+        val userPin = getUserPincode(username) ?: return false
+        return code == userPin.pincode
+    }
+
+    fun hasPincode(username: String): Boolean {
+        val userPin = getUserPincode(username) ?: return false
+        return userPin.hasPincode()
+    }
+
+    fun setPincode(code: String, username: String) {
+        //get or create new
+        val userPin = getUserPincode(username) ?: UserPincode(username)
+        userPin.pincode = code
+        //remove old object
+        val list = getAllPincodes()
+        list.removeAll { it.username == username }
+        list.add(userPin)
+        Hawk.put(KEY_USER_PINCODE, list)
+    }
+
+    fun deleteUserPincode(username: String) {
+        val list = getAllPincodes()
+        list.removeAll { it.username == username }
+        Hawk.put(KEY_USER_PINCODE, list)
+    }
 }
