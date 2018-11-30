@@ -26,12 +26,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".presentation.screens.MainActivity"
-            android:screenOrientation="portrait"/>
-
-        <activity android:name=".presentation.screens.login.LoginActivity"
-            android:screenOrientation="portrait"/>
-
         <activity android:name=".presentation.screens.qrreader.QrReaderActivity"
             android:screenOrientation="portrait"/>
     </application>

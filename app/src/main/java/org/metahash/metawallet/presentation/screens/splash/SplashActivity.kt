@@ -33,12 +33,6 @@ import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
-import org.spongycastle.crypto.engines.AESEngine
-import org.spongycastle.crypto.modes.CBCBlockCipher
-import org.spongycastle.crypto.paddings.PaddedBufferedBlockCipher
-import org.spongycastle.crypto.params.KeyParameter
-import org.spongycastle.crypto.params.ParametersWithIV
-import java.security.PrivateKey
 import java.util.concurrent.TimeUnit
 
 
@@ -61,6 +55,20 @@ class SplashActivity : BaseActivity() {
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
         ping()
+    }
+
+    private fun setActionListener() {
+        WalletApplication.activityHandler.onMaxTimeExceeded = {
+            //show pincode here
+        }
+        webView.onActionUp = {
+            WalletApplication.activityHandler.handleActivity()
+        }
+    }
+
+    private fun removeActionListener() {
+        webView.clearActionListener()
+        WalletApplication.activityHandler.clearExceedHandler()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -150,6 +158,7 @@ class SplashActivity : BaseActivity() {
 
     private fun logout() {
         unsubscribe()
+        removeActionListener()
         WalletApplication.dbHelper.clearAll()
     }
 
@@ -162,6 +171,7 @@ class SplashActivity : BaseActivity() {
                 .subscribe(
                         {
                             if (it.isOk()) {
+                                setActionListener()
                                 WalletApplication.dbHelper
                                         .setToken(it.data.token)
                                 WalletApplication.dbHelper
@@ -234,6 +244,7 @@ class SplashActivity : BaseActivity() {
                     .subscribe(
                             {
                                 if (it.isOk()) {
+                                    setActionListener()
                                     WalletApplication.dbHelper
                                             .setToken(it.data.token)
                                     WalletApplication.dbHelper

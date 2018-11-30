@@ -15,6 +15,7 @@ class DBHelper {
     private val KEY_USER_WALLETS = "key_user_wallets"
     private val KEY_ONLY_LOCAL_WALLETS = "key_only_local_wallets"
     private val KEY_USER_PINCODE = "key_user_pincode"
+    private val KEY_LAST_ACTION_TIME = "key_last_action_time"
 
     fun clearAll() {
         Hawk.delete(KEY_TOKEN)
@@ -196,5 +197,15 @@ class DBHelper {
         val list = getAllPincodes()
         list.removeAll { it.username == username }
         Hawk.put(KEY_USER_PINCODE, list)
+    }
+
+    fun setLastActionTime(time: Long) {
+        Hawk.put(KEY_LAST_ACTION_TIME, time)
+    }
+
+    fun getLastActionTime() = Hawk.get<Long>(KEY_LAST_ACTION_TIME, System.currentTimeMillis())
+
+    fun clearLastActionTime() {
+        Hawk.delete(KEY_LAST_ACTION_TIME)
     }
 }

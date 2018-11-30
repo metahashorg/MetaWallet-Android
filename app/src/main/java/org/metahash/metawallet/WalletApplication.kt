@@ -1,6 +1,7 @@
 package org.metahash.metawallet
 
 import android.app.Application
+import android.arch.lifecycle.ProcessLifecycleOwner
 import android.content.Context
 import android.provider.Settings
 import android.support.multidex.MultiDexApplication
@@ -12,6 +13,9 @@ import org.metahash.metawallet.Constants.BASE_URL
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.data.DBHelper
+import org.metahash.metawallet.data.UserActivityHandler
+import org.metahash.metawallet.presentation.base.AppLifecycleListener
+import org.metahash.metawallet.presentation.base.AppLifecycleProvider
 import org.spongycastle.jce.provider.BouncyCastleProvider
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -19,7 +23,9 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
-class WalletApplication : MultiDexApplication() {
+class WalletApplication : MultiDexApplication(), AppLifecycleProvider {
+
+    private val appLifecycleListener = AppLifecycleListener(this)
 
     companion object {
         lateinit var appContext: Context
@@ -30,6 +36,7 @@ class WalletApplication : MultiDexApplication() {
             Settings.Secure.getString(WalletApplication.appContext.contentResolver,
                     Settings.Secure.ANDROID_ID)
         }
+        val activityHandler = UserActivityHandler()
 
         private fun initApi(): ServiceApi {
             return ServiceApi(createRetrofit().create(Api::class.java))
@@ -62,5 +69,15 @@ class WalletApplication : MultiDexApplication() {
             ex.printStackTrace()
         }
         appContext = this
+        dbHelper.clearLastActionTime()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleListener)
+    }
+
+    override fun onAppStart() {
+        activityHandler.init()
+    }
+
+    override fun onAppStop() {
+        activityHandler.clear()
     }
 }

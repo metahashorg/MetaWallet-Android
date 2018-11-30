@@ -10,11 +10,16 @@ class TouchWebView
 @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0)
     : WebView(context, attrs, defStyle) {
 
-    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-        when (ev?.action) {
-            MotionEvent.ACTION_DOWN -> Log.d("MIINE", "down")
-            MotionEvent.ACTION_UP -> Log.d("MIINE", "up")
+    var onActionUp = {}
+
+    fun clearActionListener() {
+        onActionUp = {}
+    }
+
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.action == MotionEvent.ACTION_UP) {
+            onActionUp.invoke()
         }
-        return super.onInterceptTouchEvent(ev)
+        return super.onTouchEvent(event)
     }
 }
