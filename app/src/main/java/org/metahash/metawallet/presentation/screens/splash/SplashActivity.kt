@@ -55,6 +55,13 @@ class SplashActivity : BaseActivity() {
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
         ping()
+        val path = EthereumExt.createETHWallet("123")
+        if (path.isNotEmpty()) {
+            val address = EthereumExt.getWalletAddress("123", path)
+            if (address.isNotEmpty()) {
+
+            }
+        }
     }
 
     private fun setActionListener() {

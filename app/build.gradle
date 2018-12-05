@@ -77,6 +77,9 @@ dependencies {
     //qr scanner
     implementation 'me.dm7.barcodescanner:zxing:1.9.8'
 
+    //for ethereum
+    implementation 'org.web3j:core:3.3.1-android'
+
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
