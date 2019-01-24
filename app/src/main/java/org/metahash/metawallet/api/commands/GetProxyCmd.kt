@@ -6,19 +6,16 @@ import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
-import org.metahash.metawallet.data.models.Info
-import org.metahash.metawallet.data.models.Proxy
-import org.metahash.metawallet.data.models.ResolvingResult
-import org.metahash.metawallet.data.models.Status
+import org.metahash.metawallet.data.models.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.util.concurrent.Executors
 
 class GetProxyCmd(
-        private val gson: Gson
-) {
+        private val gson: Gson) {
 
+    var type = Proxy.TYPE.DEV
     private val avg = "avg"
     private val averageRegEx = "[0-9]+.[0-9]+".toRegex()
     private val MAX_PROXY_COUNT = 3
@@ -31,10 +28,10 @@ class GetProxyCmd(
         proxyList.clear()
         torrentLis.clear()
         return Observable.combineLatest(
-                getResolveObserver(Constants.URL_PROXY_DEV),
-                getResolveObserver(Constants.URL_TORRENT_DEV, false),
+                getResolveObserver(getResolveProxyAddress()),
+                getResolveObserver(getResolveTorrentAddress(), false),
                 BiFunction<Info, Info, ResolvingResult>
-                { proxy, torrent -> ResolvingResult(proxy, torrent) }
+                { proxy, torrent -> ResolvingResult(type, ResolvingInfo(proxy, torrent)) }
         ).map { resultToString(it) }
     }
 
@@ -82,9 +79,9 @@ class GetProxyCmd(
                                     val matches = averageRegEx.findAll(it).toList()
                                     if (matches.size == 4) {
                                         if (isProxy) {
-                                            proxyList.add(Proxy(ip, matches[1].value.toDouble()))
+                                            proxyList.add(Proxy(ip, matches[1].value.toDouble(), type))
                                         } else {
-                                            torrentLis.add(Proxy(ip, matches[1].value.toDouble()))
+                                            torrentLis.add(Proxy(ip, matches[1].value.toDouble(), type))
                                         }
                                     }
                                 }
@@ -95,5 +92,22 @@ class GetProxyCmd(
                     }
                     return@map Info(2, Status(ips.size, if (isProxy) proxyList.size else torrentLis.size))
                 }
+    }
+
+    private fun getResolveProxyAddress(): String {
+        return if (type == Proxy.TYPE.DEV) {
+            Constants.URL_PROXY_DEV
+        } else {
+            Constants.URL_PROXY
+        }
+    }
+
+
+    private fun getResolveTorrentAddress(): String {
+        return if (type == Proxy.TYPE.DEV) {
+            Constants.URL_TORRENT_DEV
+        } else {
+            Constants.URL_TORRENT
+        }
     }
 }

@@ -25,10 +25,9 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
+import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.api.wvinterface.JSBridge
-import org.metahash.metawallet.data.models.CreateTxResult
-import org.metahash.metawallet.data.models.ResolvingResult
-import org.metahash.metawallet.data.models.ResponseError
+import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
@@ -54,14 +53,15 @@ class SplashActivity : BaseActivity() {
         showLoadingOrError()
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
-        ping()
-        val path = EthereumExt.createETHWallet("123")
+        WalletApplication.dbHelper.deleteProxyTorrent()
+        ping(Proxy.TYPE.DEV)
+        /*val path = EthereumExt.createETHWallet("123")
         if (path.isNotEmpty()) {
             val address = EthereumExt.getWalletAddress("123", path)
             if (address.isNotEmpty()) {
-
+                WalletApplication.api.getTxParams(address, 3)
             }
-        }
+        }*/
     }
 
     private fun setActionListener() {
@@ -142,6 +142,10 @@ class SplashActivity : BaseActivity() {
                         { p1, p2, p3, p4, p5, p6 ->
                             createTransaction(p1, p2, p3, p4, p5, p6)
                         },
+                        //create transaction new
+                        { p1, p2, p3, p4, p5, p6, p7 ->
+
+                        },
                         //logout
                         { logout() },
                         // register
@@ -158,7 +162,15 @@ class SplashActivity : BaseActivity() {
                         { fromUI({ openQrScanner() }) },
                         //create wallet from import
                         { a, k, p, c, code, n ->
-                            importWalletFromParams(k, p, c, code, n)}
+                            importWalletFromParams(k, p, c, code, n)
+                        },
+                        //clear cache
+                        {
+                            fromUI({
+                                webView.clearCache(true)
+                                fromUI({ webView.reload() }, 200)
+                            })
+                        }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -217,14 +229,19 @@ class SplashActivity : BaseActivity() {
                 ))
     }
 
-    private fun ping() {
+    private fun ping(type: Proxy.TYPE) {
         val obs = object : DisposableObserver<String>() {
             override fun onComplete() {
-                val info = WalletApplication.gson.toJson(ResolvingResult(3))
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.UPDATERESOLVING, info)
-                WalletApplication.api.saveProxy()
-                refreshToken()
+                if (type == Proxy.TYPE.PROD) {
+                    val info = WalletApplication.gson.toJson(ResolvingResult(type, ResolvingInfo(3)))
+                    JsFunctionCaller.callFunction(webView,
+                            JsFunctionCaller.FUNCTION.UPDATERESOLVING, info)
+                    WalletApplication.api.saveProxy()
+                    refreshToken()
+                } else {
+                    WalletApplication.api.saveProxy()
+                    ping(Proxy.TYPE.PROD)
+                }
             }
 
             override fun onNext(t: String) {
@@ -239,7 +256,7 @@ class SplashActivity : BaseActivity() {
                         JsFunctionCaller.FUNCTION.ONIPREADY, false)
             }
         }
-        addSubscription(WalletApplication.api.ping()
+        addSubscription(WalletApplication.api.ping(type)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeWith(obs))
     }

@@ -34,4 +34,7 @@ interface Api {
 
     @POST
     fun getTxInfo(@Url url: String, @Body body: ServiceRequest): Observable<GetTxInfoResponse>
+
+    @POST
+    fun getTxParams(@Url url: String, @Body body: ServiceRequest): Observable<GetTxParamsResponse>
 }

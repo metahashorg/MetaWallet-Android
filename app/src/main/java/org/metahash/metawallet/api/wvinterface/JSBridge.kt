@@ -11,6 +11,7 @@ class JSBridge(
         private val onGetHistory: (String) -> Unit,
         private val onGenerateAddress: (String, String, String, String) -> Unit,
         private val onCreateTransaction: (String, String, String, String, String, String) -> Unit,
+        private val onCreateTransactionNew: (String, String, String, String, String, String, String) -> Unit,
         private val onLogOut: () -> Unit,
         private val onSignUp: (String, String) -> Unit,
         private val setOnlyLocal: (Boolean) -> Unit,
@@ -18,7 +19,8 @@ class JSBridge(
         private val onGetPrivateKey: (String, String) -> String,
         private val onGetAppVersion: () -> String,
         private val onStartQr: () -> Unit,
-        private val onImport: (String, String, String, String, String, String) -> Unit) {
+        private val onImport: (String, String, String, String, String, String) -> Unit,
+        private val onClearCache: () -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -49,6 +51,12 @@ class JSBridge(
     fun sendTMHTx(from: String, password: String, to: String,
                   amount: String, fee: String, data: String) {
         onCreateTransaction.invoke(from, password, to, amount, fee, data)
+    }
+
+    @JavascriptInterface
+    fun sendTx(from: String, password: String, to: String,
+                  amount: String, fee: String, data: String, currency: String) {
+        onCreateTransactionNew.invoke(from, password, to, amount, fee, data, currency)
     }
 
     @JavascriptInterface
@@ -84,5 +92,10 @@ class JSBridge(
     fun importWallet(address: String, privKey: String, password: String,
                      currency: String, currency_code: String, name: String) {
         onImport.invoke(address, privKey, password, currency, currency_code, name)
+    }
+
+    @JavascriptInterface
+    fun clearCache() {
+        onClearCache.invoke()
     }
 }

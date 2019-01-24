@@ -29,13 +29,21 @@ class DBHelper {
 
     //PROXY AND TORRENT IP
     fun setProxy(proxy: List<Proxy>) {
-        Hawk.put(KEY_PROXY, proxy)
+        val list = Hawk.get<List<Proxy>>(KEY_PROXY, listOf()).toMutableList()
+        list.addAll(proxy)
+        Hawk.put(KEY_PROXY, list)
     }
 
-    fun getAllProxy() = Hawk.get<List<Proxy>>(KEY_PROXY, listOf())
+    fun getAllProxy(type: Proxy.TYPE? = Proxy.TYPE.DEV): List<Proxy> {
+        val list = Hawk.get<List<Proxy>>(KEY_PROXY, listOf())
+        return when(type) {
+            null -> list
+            else -> list.filter { it.type == type }
+        }
+    }
 
-    fun getProxy(): Proxy {
-        val list = getAllProxy()
+    fun getProxy(type: Proxy.TYPE? = Proxy.TYPE.DEV): Proxy {
+        val list = getAllProxy(type)
         return if (list.isEmpty()) {
             Proxy.getDefault()
         } else {
@@ -44,14 +52,21 @@ class DBHelper {
     }
 
     fun setTorrent(proxy: List<Proxy>) {
-        Hawk.put(KEY_TORRENT, proxy)
+        val list = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf()).toMutableList()
+        list.addAll(proxy)
+        Hawk.put(KEY_TORRENT, list)
     }
 
-    //TOKEN AND LOGIN
-    fun getAllTorrent() = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf())
+    fun getAllTorrent(type: Proxy.TYPE? = Proxy.TYPE.DEV): List<Proxy> {
+        val list = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf())
+        return when(type) {
+            null -> list
+            else -> list.filter { it.type == type }
+        }
+    }
 
-    fun getTorrent(): Proxy {
-        val list = getAllTorrent()
+    fun getTorrent(type: Proxy.TYPE? = Proxy.TYPE.DEV): Proxy {
+        val list = getAllTorrent(type)
         return if (list.isEmpty()) {
             Proxy.getDefault()
         } else {
@@ -59,6 +74,12 @@ class DBHelper {
         }
     }
 
+    fun deleteProxyTorrent() {
+        Hawk.delete(KEY_TORRENT)
+        Hawk.delete(KEY_PROXY)
+    }
+
+    //TOKEN AND LOGIN
     fun setToken(token: String) {
         Hawk.put(KEY_TOKEN, token)
     }

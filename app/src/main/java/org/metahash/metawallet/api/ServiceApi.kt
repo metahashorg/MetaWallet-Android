@@ -48,6 +48,9 @@ class ServiceApi(private val api: Api) {
     private val historyCmd by lazy {
         HistoryCmd(api)
     }
+    private val txParamsCmd by lazy {
+        GetTxParamsCmd(api)
+    }
 
 
     fun login(login: String, password: String): Observable<LoginResponse> {
@@ -169,7 +172,10 @@ class ServiceApi(private val api: Api) {
         ).distinctUntilChanged()
     }
 
-    fun ping() = pingCmd.execute()
+    fun ping(type: Proxy.TYPE): Observable<String> {
+        pingCmd.type = type
+        return pingCmd.execute()
+    }
 
     fun saveProxy() {
         pingCmd.saveProxy()
@@ -189,6 +195,22 @@ class ServiceApi(private val api: Api) {
     fun isBalanceChanged(currency: String): Observable<Boolean> {
         checkBalanceCmd.cur = currency.toInt()
         return checkBalanceCmd.execute()
+    }
+
+    fun getTxParams(address: String, currency: Int) {
+        txParamsCmd.address = address
+        txParamsCmd.currency = currency
+        txParamsCmd.execute()
+                .subscribe(
+                        {
+                            if (it != null) {
+
+                            }
+                        },
+                        {
+                            it.printStackTrace()
+                        }
+                )
     }
 
     private fun <R> obsToIntervalWithCount(

@@ -17,6 +17,7 @@ object ServiceRequestFactory {
     private const val METHOD_CREATE_TX = "mhc_send"
     private const val METHOD_TX_INFO = "get-tx"
     private const val METHOD_SYNC_WALLET = "address.create"
+    private const val METHOD_TX_PARAMS = "transaction.params"
 
     //params
     private const val KEY_CURRENCY = "currency"
@@ -43,6 +44,7 @@ object ServiceRequestFactory {
             REQUESTTYPE.MAKETRANSACTION -> createTransactionRequest(params!!)
             REQUESTTYPE.TXINFO -> createTxInfoRequest(params!!)
             REQUESTTYPE.SYNCWALLET -> createSyncWalletRequest(params!!)
+            REQUESTTYPE.TXPARAMS -> createTxParamsRequest(params!!)
         }
     }
 
@@ -114,6 +116,15 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getTxParamsParams(address: String, currency: Int): JsonArray {
+        return JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty(KEY_CURRENCY, currency)
+                addProperty(KEY_ADDRESS, address)
+            })
+        }
+    }
+
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
     private fun createLoginRequest(params: Any) = ServiceRequest(
@@ -165,6 +176,11 @@ object ServiceRequestFactory {
             uid = WalletApplication.deviceId
     )
 
+    private fun createTxParamsRequest(params: Any) = ServiceRequest(
+            method = METHOD_TX_PARAMS,
+            params = params
+    )
+
     enum class REQUESTTYPE {
         LOGIN,
         REGISTER,
@@ -174,6 +190,7 @@ object ServiceRequestFactory {
         WALLETHISTORY,
         MAKETRANSACTION,
         TXINFO,
-        SYNCWALLET
+        SYNCWALLET,
+        TXPARAMS
     }
 }

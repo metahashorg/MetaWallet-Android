@@ -1,9 +1,13 @@
 package org.metahash.metawallet.data.models
 
 data class ResolvingResult(
-        val proxy: Info,
-        val torrent: Info
-) {
+        val type: Proxy.TYPE,
+        val data: ResolvingInfo)
+
+data class ResolvingInfo(
+    val proxy: Info,
+    val torrent: Info) {
+
     constructor() : this(Info(), Info())
 
     constructor(stage: Int) : this(Info(stage, Status()), Info(stage, Status()))
@@ -12,7 +16,7 @@ data class ResolvingResult(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ResolvingResult
+        other as ResolvingInfo
 
         if (proxy != other.proxy) return false
         if (torrent != other.torrent) return false
