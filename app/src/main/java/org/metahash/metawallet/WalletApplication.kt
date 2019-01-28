@@ -74,10 +74,10 @@ class WalletApplication : MultiDexApplication(), AppLifecycleProvider {
     }
 
     override fun onAppStart() {
-        activityHandler.init()
+        //activityHandler.init()
     }
 
     override fun onAppStop() {
-        activityHandler.clear()
+        //activityHandler.clear()
     }
 }

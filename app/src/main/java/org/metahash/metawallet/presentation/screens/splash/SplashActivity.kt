@@ -65,17 +65,17 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun setActionListener() {
-        WalletApplication.activityHandler.onMaxTimeExceeded = {
+/*        WalletApplication.activityHandler.onMaxTimeExceeded = {
             //show pincode here
         }
         webView.onActionUp = {
             WalletApplication.activityHandler.handleActivity()
-        }
+        }*/
     }
 
     private fun removeActionListener() {
-        webView.clearActionListener()
-        WalletApplication.activityHandler.clearExceedHandler()
+        //webView.clearActionListener()
+        //WalletApplication.activityHandler.clearExceedHandler()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -372,7 +372,7 @@ class SplashActivity : BaseActivity() {
                         JsFunctionCaller.callFunction(webView,
                                 JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                     })
-                    WalletApplication.api.createTransaction(tx)
+                    WalletApplication.api.createTransaction(tx, wallet.currency.toInt())
                 }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -381,7 +381,7 @@ class SplashActivity : BaseActivity() {
                             JsFunctionCaller.callFunction(webView,
                                     JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                             if (it.isProxyReady()) {
-                                startTrxCheck(it)
+                                startTrxCheck(it, wallet?.currency?.toInt() ?: 0)
                             }
 
                         },
@@ -391,7 +391,7 @@ class SplashActivity : BaseActivity() {
                 ))
     }
 
-    private fun startTrxCheck(result: CreateTxResult) {
+    private fun startTrxCheck(result: CreateTxResult, currencyId: Int) {
         val obs = object : DisposableObserver<CreateTxResult>() {
             override fun onComplete() {}
 
@@ -410,7 +410,7 @@ class SplashActivity : BaseActivity() {
             }
         }
         addSubscription(
-                WalletApplication.api.getTxInfo(result, MAX_INFO_TRY_COUNT)
+                WalletApplication.api.getTxInfo(result, MAX_INFO_TRY_COUNT, currencyId)
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribeWith(obs))
     }

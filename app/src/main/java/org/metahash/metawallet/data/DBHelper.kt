@@ -229,4 +229,9 @@ class DBHelper {
     fun clearLastActionTime() {
         Hawk.delete(KEY_LAST_ACTION_TIME)
     }
+
+    fun getCurrencyIdByAddress(address: String): Int {
+        val wallet = getUserWalletByAddress(address, getLogin())
+        return wallet?.currency?.toInt() ?: -1
+    }
 }

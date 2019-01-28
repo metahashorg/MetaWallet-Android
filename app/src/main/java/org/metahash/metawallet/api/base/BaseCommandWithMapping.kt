@@ -60,8 +60,6 @@ abstract class BaseCommandWithMapping<RESULT, RESPONSE> : ProxyAddressProvider {
 
     abstract fun afterResponse(response: Observable<RESPONSE>): Observable<RESULT>
 
-
-
     private fun returnOnUI(result: Observable<RESULT>): Observable<RESULT> =
             result.observeOn(AndroidSchedulers.mainThread())
 

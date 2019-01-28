@@ -4,7 +4,10 @@ import io.reactivex.Observable
 import io.reactivex.functions.Function3
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*
+import org.metahash.metawallet.data.ProxyTorrentResolver
 import org.metahash.metawallet.data.models.*
+import org.metahash.metawallet.extensions.formatProxy
+import org.metahash.metawallet.extensions.formatTorrent
 import java.util.concurrent.TimeUnit
 
 class ServiceApi(private val api: Api) {
@@ -83,7 +86,7 @@ class ServiceApi(private val api: Api) {
         return allHistoryCmd.executeWithCache()
     }
 
-    fun createTransaction(tx: Transaction): Observable<CreateTxResult> {
+    fun createTransaction(tx: Transaction, currencyId: Int): Observable<CreateTxResult> {
         createTxCmd.to = tx.to
         createTxCmd.value = tx.value
         createTxCmd.fee = tx.fee
@@ -93,24 +96,24 @@ class ServiceApi(private val api: Api) {
         createTxCmd.sign = tx.sign
 
         //to be sure proxy list is 3 size exactly
-        val proxyList = WalletApplication.dbHelper.getAllProxy().toMutableList()
+        val proxyList = ProxyTorrentResolver.torrentListResolver(currencyId).toMutableList()
         while (proxyList.size < 3) {
             proxyList.add(proxyList[0])
         }
 
         return Observable.combineLatest(
                 createTxCmd
-                        .apply { baseProxyUrl = createTxCmd.formatProxy(proxyList[0].ip) }
+                        .apply { baseProxyUrl = proxyList[0].ip.formatProxy() }
                         .execute()
                         .startWith(CreateTxResponse.wait())
                         .onErrorReturnItem(CreateTxResponse.error()),
                 createTxCmd
-                        .apply { baseProxyUrl = createTxCmd.formatProxy(proxyList[1].ip) }
+                        .apply { baseProxyUrl = proxyList[1].ip.formatProxy() }
                         .execute()
                         .startWith(CreateTxResponse.wait())
                         .onErrorReturnItem(CreateTxResponse.error()),
                 createTxCmd
-                        .apply { baseProxyUrl = createTxCmd.formatProxy(proxyList[2].ip) }
+                        .apply { baseProxyUrl = proxyList[2].ip.formatProxy() }
                         .execute()
                         .startWith(CreateTxResponse.wait())
                         .onErrorReturnItem(CreateTxResponse.error()),
@@ -136,28 +139,28 @@ class ServiceApi(private val api: Api) {
         )
     }
 
-    fun getTxInfo(prevResult: CreateTxResult, maxTryCount: Long): Observable<CreateTxResult> {
+    fun getTxInfo(prevResult: CreateTxResult, maxTryCount: Long, currencyId: Int): Observable<CreateTxResult> {
         getTxInfoCmd.txHash = prevResult.id
 
         //to be sure torrent list is 3 size exactly
-        val torrentList = WalletApplication.dbHelper.getAllTorrent().toMutableList()
+        val torrentList = ProxyTorrentResolver.torrentListResolver(currencyId).toMutableList()
         while (torrentList.size < 3) {
             torrentList.add(torrentList[0])
         }
 
         return Observable.combineLatest(
                 obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = createTxCmd.formatTorrent(torrentList[0].ip) }
+                        .apply { baseTorrentUrl = torrentList[0].ip.formatTorrent() }
                         .execute(), maxTryCount = maxTryCount)
                         .startWith(GetTxInfoResponse.wait())
                         .onErrorReturnItem(GetTxInfoResponse.error()),
                 obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = createTxCmd.formatTorrent(torrentList[1].ip) }
+                        .apply { baseTorrentUrl = torrentList[1].ip.formatTorrent() }
                         .execute(), maxTryCount = maxTryCount)
                         .startWith(GetTxInfoResponse.wait())
                         .onErrorReturnItem(GetTxInfoResponse.error()),
                 obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = createTxCmd.formatTorrent(torrentList[2].ip) }
+                        .apply { baseTorrentUrl = torrentList[2].ip.formatTorrent() }
                         .execute(), maxTryCount = maxTryCount)
                         .startWith(GetTxInfoResponse.wait())
                         .onErrorReturnItem(GetTxInfoResponse.error()),

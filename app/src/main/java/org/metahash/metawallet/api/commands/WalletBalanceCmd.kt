@@ -3,6 +3,7 @@ package org.metahash.metawallet.api.commands
 import io.reactivex.Observable
 import okhttp3.ResponseBody
 import org.metahash.metawallet.Constants
+import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
 import org.metahash.metawallet.api.base.BaseCommand
@@ -17,7 +18,7 @@ class WalletBalanceCmd(
 
     override fun serviceRequest(): Observable<BalanceResponse> {
         return api
-                .getWalletBalance(getTorrentAddress(),
+                .getWalletBalance(getTorrentAddress(WalletApplication.dbHelper.getCurrencyIdByAddress(address)),
                         ServiceRequestFactory.getRequestData(
                         ServiceRequestFactory.REQUESTTYPE.WALLETBALANCE,
                         ServiceRequestFactory.getBalanceParams(address)))

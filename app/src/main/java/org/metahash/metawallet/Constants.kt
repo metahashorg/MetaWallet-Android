@@ -23,4 +23,7 @@ object Constants {
 
     const val TORRENT_PORT = "5795"
     const val PROXY_PORT = "9999"
+
+    const val TYPE_TMH = 1
+    const val TYPE_MHC = 4
 }
