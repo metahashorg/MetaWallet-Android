@@ -6,6 +6,7 @@ import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.base.BaseCommand
 import org.metahash.metawallet.data.models.HistoryData
 import org.metahash.metawallet.data.models.HistoryResponse
+import org.metahash.metawallet.data.models.WalletsData
 import java.util.concurrent.Executors
 
 class WalletHistoryCmd(
@@ -21,17 +22,18 @@ class WalletHistoryCmd(
         allWalletsCmd.currency = currency
         allWalletsCmd.isLocalOnly = isOnlyLocal
         return allWalletsCmd.execute()
-                .flatMap { getHistoryRequest(it.map { it.address }) }
+                .flatMap { getHistoryRequest(it) }
                 .map { list ->
                     list.forEach { it.currency = currency.toString() }
                     list
                 }
     }
 
-    private fun getHistoryRequest(addresses: List<String>): Observable<List<HistoryData>> {
+    private fun getHistoryRequest(addresses: List<WalletsData>): Observable<List<HistoryData>> {
         val requests = mutableListOf<Observable<HistoryResponse>>()
         addresses.forEach {
-            historyCmd.address = it
+            historyCmd.currencyId = it.currency.toInt()
+            historyCmd.address = it.address
             historyCmd.subscribeScheduler = Schedulers.from(executor)
             requests.add(historyCmd.execute())
         }

@@ -75,8 +75,9 @@ class ServiceApi(private val api: Api) {
         return walletsCmd.executeWithCache()
     }
 
-    fun getBalance(address: String): Observable<BalanceResponse> {
+    fun getBalance(address: String, currencyId: Int): Observable<BalanceResponse> {
         balanceCmd.address = address
+        balanceCmd.currency = currencyId
         return balanceCmd.execute()
     }
 

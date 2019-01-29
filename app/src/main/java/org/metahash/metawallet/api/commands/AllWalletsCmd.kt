@@ -28,7 +28,8 @@ class AllWalletsCmd(
 
     override fun afterResponse(response: Observable<WalletsResponse>): Observable<List<WalletsData>> {
         return response.map {
-            val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency.toString(), WalletApplication.dbHelper.getLogin())
+            val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency.toString(),
+                    WalletApplication.dbHelper.getLogin())
             if (isLocalOnly) {
                 return@map local.map { fromLocalMapper.fromEntity(it) }
             }

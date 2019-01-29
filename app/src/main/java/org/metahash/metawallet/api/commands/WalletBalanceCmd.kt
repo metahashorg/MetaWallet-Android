@@ -15,10 +15,11 @@ class WalletBalanceCmd(
 ) : BaseCommand<BalanceResponse>() {
 
     var address: String = ""
+    var currency = 0
 
     override fun serviceRequest(): Observable<BalanceResponse> {
         return api
-                .getWalletBalance(getTorrentAddress(WalletApplication.dbHelper.getCurrencyIdByAddress(address)),
+                .getWalletBalance(getTorrentAddress(currency),
                         ServiceRequestFactory.getRequestData(
                         ServiceRequestFactory.REQUESTTYPE.WALLETBALANCE,
                         ServiceRequestFactory.getBalanceParams(address)))

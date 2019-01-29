@@ -12,10 +12,11 @@ class HistoryCmd(
     : BaseCommand<HistoryResponse>() {
 
     var address = ""
+    var currencyId = 0
 
     override fun serviceRequest(): Observable<HistoryResponse> {
         return api
-                .getWalletHistory(getTorrentAddress(WalletApplication.dbHelper.getCurrencyIdByAddress(address)),
+                .getWalletHistory(getTorrentAddress(currencyId),
                         ServiceRequestFactory.getRequestData(
                                 ServiceRequestFactory.REQUESTTYPE.WALLETHISTORY,
                                 ServiceRequestFactory.getHistoryParams(address)))

@@ -25,7 +25,7 @@ class AllBalancesCmd(
         allWalletsCmd.currency = currency
         return allWalletsCmd.execute()
                 .flatMap(
-                        { getBalancesRequest(it.map { it.address }) },
+                        { getBalancesRequest(it) },
                         { wallets, balances ->
                             wallets.forEach { wallet ->
                                 val balance = balances.firstOrNull { it.address == wallet.address }
@@ -37,10 +37,11 @@ class AllBalancesCmd(
                         })
     }
 
-    private fun getBalancesRequest(addresses: List<String>): Observable<List<BalanceData>> {
+    private fun getBalancesRequest(addresses: List<WalletsData>): Observable<List<BalanceData>> {
         val list = mutableListOf<Observable<BalanceResponse>>()
         addresses.forEach {
-            balanceCmd.address = it
+            balanceCmd.address = it.address
+            balanceCmd.currency = it.currency.toInt()
             balanceCmd.subscribeScheduler = Schedulers.from(executor)
             list.add(balanceCmd.execute())
         }

@@ -362,7 +362,7 @@ class SplashActivity : BaseActivity() {
                     JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "WRONG_PASSWORD")
             return
         }
-        addSubscription(WalletApplication.api.getBalance(wallet.address)
+        addSubscription(WalletApplication.api.getBalance(wallet.address, wallet.currency.toInt())
                 .observeOn(Schedulers.computation())
                 .flatMap {
                     val nonce = it.result.countSpent + 1
