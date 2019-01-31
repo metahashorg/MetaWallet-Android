@@ -26,4 +26,7 @@ object Constants {
 
     const val TYPE_TMH = 1
     const val TYPE_MHC = 4
+
+    //in days
+    const val MAX_PROXY_UPDATE = 5L
 }

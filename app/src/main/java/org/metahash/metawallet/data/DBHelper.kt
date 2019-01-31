@@ -2,11 +2,11 @@ package org.metahash.metawallet.data
 
 import com.orhanobut.hawk.Hawk
 import org.metahash.metawallet.data.models.*
+import java.util.concurrent.TimeUnit
 
 class DBHelper {
 
-    private val KEY_PROXY = "key_proxy"
-    private val KEY_TORRENT = "key_torrent"
+    private val KEY_PROXY_TORRENT = "key_proxy_torrent"
     private val KEY_TOKEN = "key_token"
     private val KEY_LOGIN = "key_login"
     private val KEY_REFRESH_TOKEN = "key_refresh_token"
@@ -29,14 +29,15 @@ class DBHelper {
 
     //PROXY AND TORRENT IP
     fun setProxy(proxy: List<Proxy>) {
-        val list = Hawk.get<List<Proxy>>(KEY_PROXY, listOf()).toMutableList()
-        list.addAll(proxy)
-        Hawk.put(KEY_PROXY, list)
+        val data = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData())
+        data.proxy.addAll(proxy)
+        data.lastUpdateTime = System.currentTimeMillis()
+        Hawk.put(KEY_PROXY_TORRENT, data)
     }
 
     fun getAllProxy(type: Proxy.TYPE? = Proxy.TYPE.DEV): List<Proxy> {
-        val list = Hawk.get<List<Proxy>>(KEY_PROXY, listOf())
-        return when(type) {
+        val list = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData()).proxy
+        return when (type) {
             null -> list
             else -> list.filter { it.type == type }
         }
@@ -52,14 +53,15 @@ class DBHelper {
     }
 
     fun setTorrent(proxy: List<Proxy>) {
-        val list = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf()).toMutableList()
-        list.addAll(proxy)
-        Hawk.put(KEY_TORRENT, list)
+        val data = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData())
+        data.torrent.addAll(proxy)
+        data.lastUpdateTime = System.currentTimeMillis()
+        Hawk.put(KEY_PROXY_TORRENT, data)
     }
 
     fun getAllTorrent(type: Proxy.TYPE? = Proxy.TYPE.DEV): List<Proxy> {
-        val list = Hawk.get<List<Proxy>>(KEY_TORRENT, listOf())
-        return when(type) {
+        val list = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData()).torrent
+        return when (type) {
             null -> list
             else -> list.filter { it.type == type }
         }
@@ -74,9 +76,16 @@ class DBHelper {
         }
     }
 
+    fun needUpdateProxy(maxDiffDays: Long): Boolean {
+        val data = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData())
+        val diff = System.currentTimeMillis() - data.lastUpdateTime
+        return (TimeUnit.MILLISECONDS.toDays(diff) >= maxDiffDays) ||
+                data.torrent.isEmpty() ||
+                data.proxy.isEmpty()
+    }
+
     fun deleteProxyTorrent() {
-        Hawk.delete(KEY_TORRENT)
-        Hawk.delete(KEY_PROXY)
+        Hawk.delete(KEY_PROXY_TORRENT)
     }
 
     //TOKEN AND LOGIN
@@ -151,7 +160,7 @@ class DBHelper {
 
     fun updateUserWallet(wallet: Wallet, userLogin: String) {
         val data = getUserWallets()
-        data.removeAll { it.address == wallet.address && it.userLogin == userLogin}
+        data.removeAll { it.address == wallet.address && it.userLogin == userLogin }
         data.add(wallet)
         Hawk.put(KEY_USER_WALLETS, data)
     }

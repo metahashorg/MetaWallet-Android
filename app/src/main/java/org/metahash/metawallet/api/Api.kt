@@ -1,7 +1,9 @@
 package org.metahash.metawallet.api
 
 import io.reactivex.Observable
+import okhttp3.ResponseBody
 import org.metahash.metawallet.data.models.*
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Url
@@ -37,4 +39,13 @@ interface Api {
 
     @POST
     fun getTxParams(@Url url: String, @Body body: ServiceRequest): Observable<GetTxParamsResponse>
+
+    //ping proxy
+    @POST
+    fun pingProxyAddress(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
+
+    //ping torrent
+    @POST
+    fun pingTorrentAddress(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
+
 }

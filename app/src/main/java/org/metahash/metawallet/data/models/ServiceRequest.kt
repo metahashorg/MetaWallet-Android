@@ -1,7 +1,5 @@
 package org.metahash.metawallet.data.models
 
-import com.google.gson.JsonArray
-
 private const val DEFAULT_ID = 1
 private const val DEFAULT_UID = ""
 private const val DEFAULT_VERSION = "1.0.0"

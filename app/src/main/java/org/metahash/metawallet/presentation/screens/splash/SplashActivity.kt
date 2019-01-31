@@ -53,8 +53,15 @@ class SplashActivity : BaseActivity() {
         showLoadingOrError()
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
-        WalletApplication.dbHelper.deleteProxyTorrent()
-        ping(Proxy.TYPE.DEV)
+        //if need to update - delete proxy and torernt, ping
+        WalletApplication.dbHelper.setProxy(listOf())
+        if (WalletApplication.dbHelper.needUpdateProxy(Constants.MAX_PROXY_UPDATE)) {
+            WalletApplication.dbHelper.deleteProxyTorrent()
+            ping(Proxy.TYPE.DEV)
+        } else {
+            //refresh token directly
+            refreshToken()
+        }
         /*val path = EthereumExt.createETHWallet("123")
         if (path.isNotEmpty()) {
             val address = EthereumExt.getWalletAddress("123", path)

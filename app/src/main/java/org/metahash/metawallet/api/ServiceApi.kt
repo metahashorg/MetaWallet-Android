@@ -19,7 +19,7 @@ class ServiceApi(private val api: Api) {
         RegisterCmd(api)
     }
     private val pingCmd by lazy {
-        GetProxyCmd(WalletApplication.gson)
+        GetProxyCmd(WalletApplication.gson, pingProxyCmd, pingTorrentCmd)
     }
     private val walletsCmd by lazy {
         AllBalancesCmd(allWalletsCmd, balanceCmd)
@@ -53,6 +53,12 @@ class ServiceApi(private val api: Api) {
     }
     private val txParamsCmd by lazy {
         GetTxParamsCmd(api)
+    }
+    private val pingTorrentCmd by lazy {
+        PingTorrentAddressCmd(api)
+    }
+    private val pingProxyCmd by lazy {
+        PingProxyAddressCmd(api)
     }
 
 

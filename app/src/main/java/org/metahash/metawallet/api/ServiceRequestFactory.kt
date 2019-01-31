@@ -18,6 +18,8 @@ object ServiceRequestFactory {
     private const val METHOD_TX_INFO = "get-tx"
     private const val METHOD_SYNC_WALLET = "address.create"
     private const val METHOD_TX_PARAMS = "transaction.params"
+    private const val METHOD_PROXY_INFO = "getinfo"
+    private const val METHOD_TORRENT_INFO = "get-count-blocks"
 
     //params
     private const val KEY_CURRENCY = "currency"
@@ -45,6 +47,8 @@ object ServiceRequestFactory {
             REQUESTTYPE.TXINFO -> createTxInfoRequest(params!!)
             REQUESTTYPE.SYNCWALLET -> createSyncWalletRequest(params!!)
             REQUESTTYPE.TXPARAMS -> createTxParamsRequest(params!!)
+            REQUESTTYPE.PINGPROXY -> createPingProxyParamsRequest()
+            REQUESTTYPE.PINGTORRENT -> createPingTorrentParamsRequest()
         }
     }
 
@@ -181,6 +185,10 @@ object ServiceRequestFactory {
             params = params
     )
 
+    private fun createPingProxyParamsRequest() = ServiceRequest(method = METHOD_PROXY_INFO)
+
+    private fun createPingTorrentParamsRequest() = ServiceRequest(method = METHOD_TORRENT_INFO)
+
     enum class REQUESTTYPE {
         LOGIN,
         REGISTER,
@@ -191,6 +199,8 @@ object ServiceRequestFactory {
         MAKETRANSACTION,
         TXINFO,
         SYNCWALLET,
-        TXPARAMS
+        TXPARAMS,
+        PINGPROXY,
+        PINGTORRENT
     }
 }

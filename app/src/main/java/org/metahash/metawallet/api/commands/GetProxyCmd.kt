@@ -4,16 +4,19 @@ import com.google.gson.Gson
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
+import okhttp3.MediaType
+import okhttp3.ResponseBody
 import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.data.models.*
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import retrofit2.Response
 import java.net.InetAddress
 import java.util.concurrent.Executors
 
 class GetProxyCmd(
-        private val gson: Gson) {
+        private val gson: Gson,
+        private val pingProxyCmd: PingProxyAddressCmd,
+        private val pingTorrentCmd: PingTorrentAddressCmd) {
 
     var type = Proxy.TYPE.DEV
     private val avg = "avg"
@@ -68,8 +71,37 @@ class GetProxyCmd(
 
     private fun getPingObs(ips: MutableList<InetAddress>, isProxy: Boolean): Observable<Info> {
         return Observable.fromIterable(ips.toMutableList())
+                .flatMap(
+                        {
+                            getPingCmd(isProxy, it.hostAddress)
+                                    .onErrorReturnItem(getErrorResponse())
+                        },
+                        { address, response ->
+                            if (response.isSuccessful) {
+                                val time = response.raw().receivedResponseAtMillis() -
+                                        response.raw().sentRequestAtMillis()
+                                val ip = address.hostAddress
+                                if (isProxy) {
+                                    proxyList.add(Proxy(ip, time.toDouble(), type))
+                                } else {
+                                    torrentLis.add(Proxy(ip, time.toDouble(), type))
+                                }
+                            }
+                        }
+                )
                 .map {
-                    try {
+                    Info(2, Status(ips.size, if (isProxy) proxyList.size else torrentLis.size))
+                }
+/*                .map {
+                    if (it.isSuccessful) {
+                        if (isProxy) {
+                            proxyList.add(Proxy(ip, matches[1].value.toDouble(), type))
+                        } else {
+                            torrentLis.add(Proxy(ip, matches[1].value.toDouble(), type))
+                        }
+                        it.raw().receivedResponseAtMillis()
+                    }
+*//*                    try {
                         val ip = it.hostAddress
                         val process = Runtime.getRuntime().exec("/system/bin/ping -c 1 $ip")
                         val exitValue = process.waitFor()
@@ -89,9 +121,9 @@ class GetProxyCmd(
                         }
                     } catch (ex: Exception) {
                         ex.printStackTrace()
-                    }
+                    }*//*
                     return@map Info(2, Status(ips.size, if (isProxy) proxyList.size else torrentLis.size))
-                }
+                }*/
     }
 
     private fun getResolveProxyAddress(): String {
@@ -109,5 +141,19 @@ class GetProxyCmd(
         } else {
             Constants.URL_TORRENT
         }
+    }
+
+    private fun getPingCmd(isProxy: Boolean, address: String): Observable<Response<ResponseBody>> {
+        return if (isProxy) {
+            pingProxyCmd.address = address
+            pingProxyCmd.execute()
+        } else {
+            pingTorrentCmd.address = address
+            pingTorrentCmd.execute()
+        }
+    }
+
+    private fun getErrorResponse(): Response<ResponseBody> {
+        return Response.error(999, ResponseBody.create(MediaType.parse("text"), ""))
     }
 }
