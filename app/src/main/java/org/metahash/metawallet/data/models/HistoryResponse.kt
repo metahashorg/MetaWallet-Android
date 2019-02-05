@@ -13,7 +13,8 @@ data class HistoryData(
         val transaction: String,
         val value: Float,
         val timestamp: Long,
-        var currency: String) : Serializable {
+        var currency: String,
+        var userLogin: String) : Serializable {
 
-    constructor() : this("", "", "", 0F, 0L, "")
+    constructor() : this("", "", "", 0F, 0L, "", "")
 }

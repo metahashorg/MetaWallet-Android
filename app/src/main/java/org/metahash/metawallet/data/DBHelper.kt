@@ -124,32 +124,45 @@ class DBHelper {
         Hawk.put(KEY_WALLETS, data)
     }
 
-    fun getWalletsDataByCurrency(currency: String?): List<WalletsData> {
+    fun getWalletsDataByCurrency(currency: String?, userLogin: String): List<WalletsData> {
         val data = getAllWalletsData()
         if (currency == null) {
             return data
         }
-        return data.filter { it.currency.equals(currency, true) }
+        return data.filter {
+            it.currency.equals(currency, true) &&
+                    it.userLogin == userLogin
+        }
     }
 
-    //WALLETS HISTORY
+    /**
+     * WALLETS HISTORY
+     */
     private fun getAllWalletsHistory() = Hawk.get<MutableList<HistoryData>>(KEY_WALLET_HISTORY, mutableListOf())
 
     fun setWalletHistory(currency: String, list: List<HistoryData>) {
+        val currentUserLogin = getLogin()
         val data = getAllWalletsHistory()
-        data.removeAll { it.currency.equals(currency, true) }
+        data.removeAll {
+            it.currency.equals(currency, true) &&
+                    it.userLogin == currentUserLogin
+        }
         data.addAll(list)
         Hawk.put(KEY_WALLET_HISTORY, data)
     }
 
     fun getWalletHistoryByCurrency(currency: String): List<HistoryData> {
+        val currentUserLogin = getLogin()
         val data = getAllWalletsHistory()
         return data.filter {
-            it.currency.equals(currency, true)
+            it.currency.equals(currency, true) &&
+                    it.userLogin == currentUserLogin
         }
     }
 
-    //user wallets
+    /**
+     * USER WALLETS
+     */
     private fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
     fun setUserWallet(wallet: Wallet) {
@@ -195,6 +208,9 @@ class DBHelper {
 
     fun isOnlyLocalWallets() = Hawk.get<Boolean>(KEY_ONLY_LOCAL_WALLETS, false)
 
+    /**
+     * PINCODES
+     */
     private fun getAllPincodes() = Hawk.get<MutableList<UserPincode>>(KEY_USER_PINCODE, mutableListOf())
 
     private fun getUserPincode(username: String): UserPincode? {

@@ -8,5 +8,5 @@ class LocalWalletToWalletMapper : BaseMapper<Wallet, WalletsData>() {
 
     override fun fromEntity(from: Wallet) = WalletsData(
             from.address, from.currency, "", "", from.code,
-            "", BalanceData(), true, from.name)
+            "", BalanceData(), true, from.name, from.userLogin)
 }

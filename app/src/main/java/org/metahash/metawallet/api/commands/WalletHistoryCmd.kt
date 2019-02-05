@@ -24,7 +24,11 @@ class WalletHistoryCmd(
         return allWalletsCmd.execute()
                 .flatMap { getHistoryRequest(it) }
                 .map { list ->
-                    list.forEach { it.currency = currency.toString() }
+                    val userLogin = WalletApplication.dbHelper.getLogin()
+                    list.forEach {
+                        it.currency = currency.toString()
+                        it.userLogin = userLogin
+                    }
                     list
                 }
     }
@@ -61,7 +65,9 @@ class WalletHistoryCmd(
             }
             .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletHistoryByCurrency(currency.toString()) }
                     .subscribeOn(Schedulers.computation())
-                    .filter { it.isNotEmpty() }
+                    .filter {
+                        it.isNotEmpty()
+                    }
             )
             .map { WalletApplication.gson.toJson(it) }
 }

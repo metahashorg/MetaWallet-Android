@@ -66,7 +66,10 @@ class AllBalancesCmd(
                     WalletApplication.dbHelper.setWalletsData(it)
                 }
             }
-            .startWith(Observable.fromCallable { WalletApplication.dbHelper.getWalletsDataByCurrency(currency.toString()) }
+            .startWith(Observable.fromCallable {
+                WalletApplication.dbHelper.getWalletsDataByCurrency(currency.toString(),
+                    WalletApplication.dbHelper.getLogin())
+            }
                     .subscribeOn(Schedulers.computation())
                     .filter { it.isNotEmpty() }
             )

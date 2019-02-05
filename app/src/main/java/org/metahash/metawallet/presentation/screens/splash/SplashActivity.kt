@@ -53,15 +53,18 @@ class SplashActivity : BaseActivity() {
         showLoadingOrError()
         initWebView()
         webView.loadUrl(Constants.WEB_URL)
-        //if need to update - delete proxy and torernt, ping
-        WalletApplication.dbHelper.setProxy(listOf())
-        if (WalletApplication.dbHelper.needUpdateProxy(Constants.MAX_PROXY_UPDATE)) {
-            WalletApplication.dbHelper.deleteProxyTorrent()
-            ping(Proxy.TYPE.DEV)
-        } else {
-            //refresh token directly
-            refreshToken()
-        }
+        fromUI({
+            //if need to update - delete proxy and torrent, then ping
+            if (WalletApplication.dbHelper.needUpdateProxy(Constants.MAX_PROXY_UPDATE)) {
+                Log.d("MIINE", "has no proxy")
+                WalletApplication.dbHelper.deleteProxyTorrent()
+                ping(Proxy.TYPE.DEV)
+            } else {
+                //refresh token directly
+                Log.d("MIINE", "has proxy")
+                refreshToken()
+            }
+        }, 1000)
         /*val path = EthereumExt.createETHWallet("123")
         if (path.isNotEmpty()) {
             val address = EthereumExt.getWalletAddress("123", path)
@@ -275,6 +278,7 @@ class SplashActivity : BaseActivity() {
                     .subscribe(
                             {
                                 if (it.isOk()) {
+                                    Log.d("MIINE", "refresh token ok")
                                     setActionListener()
                                     WalletApplication.dbHelper
                                             .setToken(it.data.token)
@@ -291,12 +295,14 @@ class SplashActivity : BaseActivity() {
                                 }
                             },
                             {
+                                Log.d("MIINE", "refresh token error")
                                 JsFunctionCaller.callFunction(webView,
                                         JsFunctionCaller.FUNCTION.ONIPREADY, false)
                                 it.printStackTrace()
                             }
                     ))
         } else {
+            Log.d("MIINE", "has no token at all")
             JsFunctionCaller.callFunction(webView,
                     JsFunctionCaller.FUNCTION.ONIPREADY, false)
         }

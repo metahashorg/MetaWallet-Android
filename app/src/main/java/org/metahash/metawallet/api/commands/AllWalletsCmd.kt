@@ -28,8 +28,9 @@ class AllWalletsCmd(
 
     override fun afterResponse(response: Observable<WalletsResponse>): Observable<List<WalletsData>> {
         return response.map {
+            val userLogin = WalletApplication.dbHelper.getLogin()
             val local = WalletApplication.dbHelper.getUserWalletsByCurrency(currency.toString(),
-                    WalletApplication.dbHelper.getLogin())
+                    userLogin)
             if (isLocalOnly) {
                 return@map local.map { fromLocalMapper.fromEntity(it) }
             }
@@ -37,6 +38,9 @@ class AllWalletsCmd(
             //remove all local wallet from remote
             local.forEach { wallet ->
                 result.removeAll { it.address.equals(wallet.address, true) }
+            }
+            result.forEach {
+                it.userLogin = userLogin
             }
             result.addAll(local.map { fromLocalMapper.fromEntity(it) })
             result

@@ -15,7 +15,8 @@ class BalanceChangedCmd(
 
     override fun afterResponse(response: Observable<List<WalletsData>>): Observable<Boolean> {
         return response.map { remote ->
-            val local = WalletApplication.dbHelper.getWalletsDataByCurrency(cur.toString())
+            val local = WalletApplication.dbHelper.getWalletsDataByCurrency(cur.toString(),
+                    WalletApplication.dbHelper.getLogin())
             if (local.isEmpty() && remote.isEmpty()) {
                 return@map false
             } else {
