@@ -103,7 +103,7 @@ class ServiceApi(private val api: Api) {
         createTxCmd.sign = tx.sign
 
         //to be sure proxy list is 3 size exactly
-        val proxyList = ProxyTorrentResolver.torrentListResolver(currencyId).toMutableList()
+        val proxyList = ProxyTorrentResolver.proxyListResolver(currencyId).toMutableList()
         while (proxyList.size < 3) {
             proxyList.add(proxyList[0])
         }

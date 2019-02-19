@@ -25,7 +25,6 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
-import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
@@ -33,7 +32,6 @@ import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
 import java.util.concurrent.TimeUnit
-
 
 class SplashActivity : BaseActivity() {
 
@@ -56,12 +54,10 @@ class SplashActivity : BaseActivity() {
         fromUI({
             //if need to update - delete proxy and torrent, then ping
             if (WalletApplication.dbHelper.needUpdateProxy(Constants.MAX_PROXY_UPDATE)) {
-                Log.d("MIINE", "has no proxy")
                 WalletApplication.dbHelper.deleteProxyTorrent()
                 ping(Proxy.TYPE.DEV)
             } else {
                 //refresh token directly
-                Log.d("MIINE", "has proxy")
                 refreshToken()
             }
         }, 1000)
@@ -150,11 +146,11 @@ class SplashActivity : BaseActivity() {
                         },
                         //create transaction
                         { p1, p2, p3, p4, p5, p6 ->
-                            createTransaction(p1, p2, p3, p4, p5, p6)
+                            createTransaction(p1, p2, p3, p4, p5, p6, Constants.TYPE_TMH.toString())
                         },
                         //create transaction new
                         { p1, p2, p3, p4, p5, p6, p7 ->
-
+                            createTransaction(p1, p2, p3, p4, p5, p6, p7)
                         },
                         //logout
                         { logout() },
@@ -255,7 +251,6 @@ class SplashActivity : BaseActivity() {
             }
 
             override fun onNext(t: String) {
-                Log.d("MIINE", t)
                 JsFunctionCaller.callFunction(webView,
                         JsFunctionCaller.FUNCTION.UPDATERESOLVING, t)
             }
@@ -278,7 +273,6 @@ class SplashActivity : BaseActivity() {
                     .subscribe(
                             {
                                 if (it.isOk()) {
-                                    Log.d("MIINE", "refresh token ok")
                                     setActionListener()
                                     WalletApplication.dbHelper
                                             .setToken(it.data.token)
@@ -295,14 +289,12 @@ class SplashActivity : BaseActivity() {
                                 }
                             },
                             {
-                                Log.d("MIINE", "refresh token error")
                                 JsFunctionCaller.callFunction(webView,
                                         JsFunctionCaller.FUNCTION.ONIPREADY, false)
                                 it.printStackTrace()
                             }
                     ))
         } else {
-            Log.d("MIINE", "has no token at all")
             JsFunctionCaller.callFunction(webView,
                     JsFunctionCaller.FUNCTION.ONIPREADY, false)
         }
@@ -362,7 +354,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun createTransaction(from: String, password: String, to: String,
-                                  amount: String, fee: String, data: String) {
+                                  amount: String, fee: String, data: String, currency: String) {
         val wallet = WalletApplication.dbHelper.getUserWalletByAddress(from, WalletApplication.dbHelper.getLogin())
         if (wallet == null) {
             //send error here
