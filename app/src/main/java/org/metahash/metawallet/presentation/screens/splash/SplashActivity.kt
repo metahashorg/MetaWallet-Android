@@ -31,6 +31,8 @@ import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.base.deeplink.DeepLinkResolver
+import org.metahash.metawallet.presentation.base.deeplink.queryparams.BaseParams
+import org.metahash.metawallet.presentation.base.deeplink.queryparams.TransactionParams
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
 import java.util.concurrent.TimeUnit
@@ -45,7 +47,6 @@ class SplashActivity : BaseActivity() {
     private val vLoading by bind<View>(R.id.vLoading)
     private val tvLoading by bind<TextView>(R.id.tv1)
     private val tvError by bind<View>(R.id.tv2)
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,10 +71,6 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.api.getTxParams(address, 3)
             }
         }*/
-        val params = DeepLinkResolver.parseDeepLink(intent)
-        params.forEach {
-            Log.d("MIINE2", it.toString())
-        }
     }
 
     private fun setActionListener() {
@@ -196,6 +193,14 @@ class SplashActivity : BaseActivity() {
                 Constants.JS_BRIDGE)
     }
 
+    private fun checkDeepLink() {
+        val params = DeepLinkResolver.parseDeepLink(intent) ?: return
+        when (params) {
+            is TransactionParams -> webView.loadUrl("${Constants.WEB_URL}#/create-transfer?to=" +
+                    "${params.getTo()}&value=${params.getValue()}")
+        }
+    }
+
     private fun logout() {
         unsubscribe()
         removeActionListener()
@@ -298,6 +303,7 @@ class SplashActivity : BaseActivity() {
                                             JsFunctionCaller.FUNCTION.ONIPREADY, true)
                                     checkUnsynchronizedWallets()
                                     startBalancesObserving()
+                                    checkDeepLink()
                                 } else {
                                     JsFunctionCaller.callFunction(webView,
                                             JsFunctionCaller.FUNCTION.ONIPREADY, false)
