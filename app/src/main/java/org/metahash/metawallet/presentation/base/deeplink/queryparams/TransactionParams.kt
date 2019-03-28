@@ -4,10 +4,13 @@ import org.metahash.metawallet.presentation.base.deeplink.LinkParam
 
 private const val PARAM_TO = "to"
 private const val PARAM_VALUE = "value"
+private const val PARAM_CURRENCY = "currency"
 
-data class TransactionParams(val params: List<LinkParam>) : BaseParams {
+class TransactionParams(params: List<LinkParam>) : BaseParams(params) {
 
-    fun getTo() = params.firstOrNull { it.name == PARAM_TO }?.value ?: ""
+    fun getTo() = getByName(PARAM_TO)?.value ?: ""
 
-    fun getValue() = params.firstOrNull { it.name == PARAM_VALUE }?.value ?: ""
+    fun getValue() = getByName(PARAM_VALUE )?.value ?: ""
+
+    fun getCurrency() = getByName(PARAM_CURRENCY)?.value ?: "tmh"
 }

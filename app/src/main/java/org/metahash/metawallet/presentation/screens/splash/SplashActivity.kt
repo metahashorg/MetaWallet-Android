@@ -197,7 +197,7 @@ class SplashActivity : BaseActivity() {
         val params = DeepLinkResolver.parseDeepLink(intent) ?: return
         when (params) {
             is TransactionParams -> webView.loadUrl("${Constants.WEB_URL}#/create-transfer?to=" +
-                    "${params.getTo()}&value=${params.getValue()}")
+                    "${params.getTo()}&value=${params.getValue()}&currency=${params.getCurrency()}")
         }
     }
 
