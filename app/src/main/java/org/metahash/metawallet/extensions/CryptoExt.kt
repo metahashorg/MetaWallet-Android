@@ -30,6 +30,7 @@ import java.util.*
 object CryptoExt {
 
     private val hexArray = "0123456789ABCDEF".toCharArray()
+    private val CRYPTO_ALGHORITM = "secp256k1"
 
     /**
      * generate user wallet
@@ -150,7 +151,7 @@ object CryptoExt {
      */
     private fun derivePublicKeyFromPrivate(privKeyFormatted: BCECPrivateKey, kf: KeyFactory): ByteArray {
         try {
-            val spec = ECNamedCurveTable.getParameterSpec("secp256k1")
+            val spec = ECNamedCurveTable.getParameterSpec(CRYPTO_ALGHORITM)
             val q = spec.g.multiply(privKeyFormatted.d)
             val pubSpec = ECPublicKeySpec(q, spec)
             val publicKeyGenerated = kf.generatePublic(pubSpec)
@@ -164,7 +165,7 @@ object CryptoExt {
     private fun generateKeyPair(): KeyPair? {
         try {
             val keyPairGenerator = KeyPairGenerator.getInstance("ECDSA", "SC")
-            val spec = ECGenParameterSpec("secp256k1")
+            val spec = ECGenParameterSpec(CRYPTO_ALGHORITM)
             keyPairGenerator.initialize(spec, SecureRandom())
             keyPairGenerator.genKeyPair()
             return keyPairGenerator.generateKeyPair()

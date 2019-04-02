@@ -11,12 +11,10 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
 import android.widget.Toast
-import com.google.zxing.integration.android.IntentIntegrator
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.observers.DisposableObserver
@@ -31,7 +29,6 @@ import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.base.deeplink.DeepLinkResolver
-import org.metahash.metawallet.presentation.base.deeplink.queryparams.BaseParams
 import org.metahash.metawallet.presentation.base.deeplink.queryparams.TransactionParams
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
@@ -97,10 +94,9 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun openQrScanner() {
-        importWalletByPrivateKey("30770201010420bb3961fbebd444fb1b7cc8a9e7b57509ccb1c3cf387c8434e01ca784affe275aa00a06082a8648ce3d030107a14403420004b5b9ebe6d276551cc39d69b1e836d042941e138f0dd5710adccf08030366bf69e8de3f3a1ff787243c45357fe9332f07ff3cc547a10ecc29257067d25d639427")
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
-            //startActivityForResult(Intent(this, QrReaderActivity::class.java), REQUEST_READ_KEY)
+            startActivityForResult(Intent(this, QrReaderActivity::class.java), REQUEST_READ_KEY)
         } else {
             ActivityCompat.requestPermissions(this,
                     arrayOf(Manifest.permission.CAMERA),
@@ -121,21 +117,15 @@ class SplashActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_READ_KEY) {
-                val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
-                if (result != null) {
-                    if (result.contents != null) {
-                        Toast.makeText(this, "Scanned: " + result.getContents(), Toast.LENGTH_LONG).show();
-                    }
+                val result = (data?.getStringExtra("data") ?: "")
+                        .replace("http://", "")
+                        .replace("https://", "")
+                if (result.isNotEmpty()) {
+                    importWalletByPrivateKey(result)
                 } else {
+                    //error while reading qr
                     Toast.makeText(this, "Error while reading QR code", Toast.LENGTH_SHORT).show()
                 }
-                /*    val result = data?.getStringExtra("data") ?: ""
-                    if (result.isNotEmpty()) {
-                        importWalletByPrivateKey(result)
-                    } else {
-                        //error while reading qr
-                        Toast.makeText(this, "Error while reading QR code", Toast.LENGTH_SHORT).show()
-                    }*/
             }
         }
     }
@@ -196,7 +186,7 @@ class SplashActivity : BaseActivity() {
     private fun checkDeepLink() {
         val params = DeepLinkResolver.parseDeepLink(intent) ?: return
         when (params) {
-            is TransactionParams -> webView.loadUrl("${Constants.WEB_URL}#/create-transfer?to=" +
+            is TransactionParams -> webView.loadUrl("${Constants.WEB_URL}#/transfer-request?to=" +
                     "${params.getTo()}&value=${params.getValue()}&currency=${params.getCurrency()}")
         }
     }
