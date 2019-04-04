@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
@@ -29,6 +30,7 @@ import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
 import org.metahash.metawallet.presentation.base.BaseActivity
 import org.metahash.metawallet.presentation.base.deeplink.DeepLinkResolver
+import org.metahash.metawallet.presentation.base.deeplink.linkbuilder.TransactionLinkBuilder
 import org.metahash.metawallet.presentation.base.deeplink.queryparams.TransactionParams
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
@@ -68,6 +70,12 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.api.getTxParams(address, 3)
             }
         }*/
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        checkDeepLink()
     }
 
     private fun setActionListener() {
@@ -186,8 +194,7 @@ class SplashActivity : BaseActivity() {
     private fun checkDeepLink() {
         val params = DeepLinkResolver.parseDeepLink(intent) ?: return
         when (params) {
-            is TransactionParams -> webView.loadUrl("${Constants.WEB_URL}#/transfer-request?to=" +
-                    "${params.getTo()}&value=${params.getValue()}&currency=${params.getCurrency()}")
+            is TransactionParams -> webView.loadUrl(TransactionLinkBuilder.createLink(params))
         }
     }
 
