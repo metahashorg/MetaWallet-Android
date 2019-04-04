@@ -125,14 +125,19 @@ class SplashActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_READ_KEY) {
-                val result = (data?.getStringExtra("data") ?: "")
-                        .replace("http://", "")
-                        .replace("https://", "")
-                if (result.isNotEmpty()) {
-                    importWalletByPrivateKey(result)
-                } else {
+                val resultData = data?.getStringExtra("data") ?: ""
+                if (resultData.isEmpty()) {
                     //error while reading qr
                     Toast.makeText(this, "Error while reading QR code", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                val result = KeyFormatter.formatKey(resultData)
+                if (KeyFormatter.isSECP256k1(result)) {
+                    importWalletByPrivateKey(result)
+                } else {
+                    //wrong format
+                    Toast.makeText(this, "Private key is in wrong format", Toast.LENGTH_SHORT).show()
+                    return
                 }
             }
         }
