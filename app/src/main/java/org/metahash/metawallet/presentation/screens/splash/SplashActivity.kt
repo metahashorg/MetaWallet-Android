@@ -126,19 +126,7 @@ class SplashActivity : BaseActivity() {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == REQUEST_READ_KEY) {
                 val resultData = data?.getStringExtra("data") ?: ""
-                if (resultData.isEmpty()) {
-                    //error while reading qr
-                    Toast.makeText(this, "Error while reading QR code", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                val result = KeyFormatter.formatKey(resultData)
-                if (KeyFormatter.isSECP256k1(result)) {
-                    importWalletByPrivateKey(result)
-                } else {
-                    //wrong format
-                    Toast.makeText(this, "Private key is in wrong format", Toast.LENGTH_SHORT).show()
-                    return
-                }
+                processQRReaderResult(resultData)
             }
         }
     }
@@ -324,14 +312,16 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
+        Log.d("MIINE", "getWallets: $currency")
         addSubscription(
                 WalletApplication.api.getAllWalletsAndBalance(
                         currency, WalletApplication.dbHelper.isOnlyLocalWallets())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 {
+                                    Log.d("MIINE", "getWallets response: $currency")
                                     JsFunctionCaller.callFunction(webView,
-                                            JsFunctionCaller.FUNCTION.WALLETSRESULT, it)
+                                            JsFunctionCaller.FUNCTION.WALLETSRESULT, it, currency)
                                 },
                                 {
                                     handleCommonError(it, webView)
@@ -346,7 +336,7 @@ class SplashActivity : BaseActivity() {
                 .subscribe(
                         {
                             JsFunctionCaller.callFunction(webView,
-                                    JsFunctionCaller.FUNCTION.HISTORYRESULT, it)
+                                    JsFunctionCaller.FUNCTION.HISTORYRESULT, it, currency)
                         },
                         {
                             handleCommonError(it, webView)
@@ -400,6 +390,8 @@ class SplashActivity : BaseActivity() {
                         JsFunctionCaller.callFunction(webView,
                                 JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                     })
+                    val string = WalletApplication.gson.toJson(tx)
+                    Log.d("MIINE", "tx: $string")
                     WalletApplication.api.createTransaction(tx, wallet.currency.toInt())
                 }
                 .observeOn(AndroidSchedulers.mainThread())
@@ -409,7 +401,7 @@ class SplashActivity : BaseActivity() {
                             JsFunctionCaller.callFunction(webView,
                                     JsFunctionCaller.FUNCTION.TXINFORESULT, res)
                             if (it.isProxyReady()) {
-                                startTrxCheck(it, wallet?.currency?.toInt() ?: 0)
+                                startTrxCheck(it, wallet.currency.toInt())
                             }
 
                         },
@@ -510,7 +502,7 @@ class SplashActivity : BaseActivity() {
             val pub = CryptoExt.publicKeyToHex(wallet.publicKey)
             val priv = CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
             JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET, key, wallet.address)
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET, key, wallet.address, "")
         }
     }
 
@@ -556,6 +548,43 @@ class SplashActivity : BaseActivity() {
         } else {
             tvLoading.text = getString(R.string.loading_error)
             tvError.makeVisible()
+        }
+    }
+
+    private fun processQRReaderResult(resultData: String) {
+        if (resultData.isEmpty()) {
+            //error while reading qr
+            JsFunctionCaller.callFunction(webView,
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                    "",
+                    "",
+                    getString(R.string.error_rq_code_read))
+            return
+        }
+        val result = KeyFormatter.formatKey(resultData)
+        when {
+            KeyFormatter.isEncryptedFormat(result) -> {
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                        "",
+                        "",
+                        getString(R.string.error_encrypted_private_key))
+            }
+            !KeyFormatter.isKeyFormat(result) -> {
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                        "",
+                        "",
+                        getString(R.string.error_invalid_private_key))
+            }
+            KeyFormatter.isSECP256k1(result) -> importWalletByPrivateKey(result)
+            else -> {
+                JsFunctionCaller.callFunction(webView,
+                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                        "",
+                        "",
+                        getString(R.string.error_wrong_rq_code_format))
+            }
         }
     }
 

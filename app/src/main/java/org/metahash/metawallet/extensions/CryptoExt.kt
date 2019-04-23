@@ -140,7 +140,7 @@ object CryptoExt {
 
     @Throws(Exception::class)
     private fun signMessage(message: ByteArray, privKey: PrivateKey): ByteArray {
-        return Signature.getInstance("SHA256withECDSA", "BC").apply {
+        return Signature.getInstance("SHA256withECDSA", "SC").apply {
             initSign(privKey)
             update(message)
         }.sign()

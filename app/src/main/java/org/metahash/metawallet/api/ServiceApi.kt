@@ -61,7 +61,6 @@ class ServiceApi(private val api: Api) {
         PingProxyAddressCmd(api)
     }
 
-
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login
         loginCmd.password = password

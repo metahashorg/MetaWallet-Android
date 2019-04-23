@@ -1,7 +1,13 @@
 <resources>
     <string name="app_name">MetaWallet</string>
 
-    <string name="loading">Loading application...</string>
+    <string name="loading">Loading application…</string>
     <string name="loading_error">Connection failure</string>
     <string name="check_network_error">Check your internet connection</string>
+
+    <!--errors-->
+    <string name="error_invalid_private_key">QR_INVALID</string>
+    <string name="error_encrypted_private_key">QR_ENCRYPTED</string>
+    <string name="error_wrong_rq_code_format">QR_UNSUPPORTED</string>
+    <string name="error_rq_code_read">Error while reading QR code</string>
 </resources>
