@@ -5,7 +5,6 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.Api
 import org.metahash.metawallet.api.ServiceRequestFactory
-import org.metahash.metawallet.api.base.BaseCommand
 import org.metahash.metawallet.api.base.BaseCommandWithMapping
 import org.metahash.metawallet.api.mappers.LocalWalletToWalletMapper
 import org.metahash.metawallet.data.models.WalletsData
@@ -35,6 +34,9 @@ class AllWalletsCmd(
                 return@map local.map { fromLocalMapper.fromEntity(it) }
             }
             val result = it.data.toMutableList()
+            result.forEach {
+                it.name = fromLocalMapper.convertName(it.name ?: "")
+            }
             //remove all local wallet from remote
             local.forEach { wallet ->
                 result.removeAll { it.address.equals(wallet.address, true) }

@@ -62,7 +62,7 @@ class SplashActivity : BaseActivity() {
                 //refresh token directly
                 refreshToken()
             }
-        }, 1000)
+        }, 1500)
         /*val path = EthereumExt.createETHWallet("123")
         if (path.isNotEmpty()) {
             val address = EthereumExt.getWalletAddress("123", path)
