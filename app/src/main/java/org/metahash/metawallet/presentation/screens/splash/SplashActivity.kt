@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.webkit.*
