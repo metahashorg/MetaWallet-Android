@@ -75,106 +75,106 @@ object AesHelper {
         }
         return null
     }
-}
 
-private fun getAesCipher(): Cipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "SC")
+    private fun getAesCipher(): Cipher = Cipher.getInstance("AES/CBC/PKCS7Padding", "SC")
 
-private fun getIvParamSpecFromBytes(ivBytes: ByteArray): IvParameterSpec {
-    return IvParameterSpec(ivBytes)
-}
-
-private fun getIvParamSpec(): IvParameterSpec {
-    val secureRandom = SecureRandom()
-    val ivBytes = ByteArray(16)
-    secureRandom.nextBytes(ivBytes)
-    return IvParameterSpec(ivBytes)
-}
-
-private fun createAesKey(password: String): SecretKeySpec {
-    val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-    val keySpec = PBEKeySpec(password.toCharArray(), byteArrayOf(0), 65536, 128)
-    val pbeSecretKey = secretKeyFactory.generateSecret(keySpec)
-    return SecretKeySpec(pbeSecretKey.encoded, "AES")
-}
-
-private fun createAesKeyFromBytes(keyBytes: ByteArray): SecretKeySpec {
-    return SecretKeySpec(keyBytes, "AES")
-}
-
-private fun createKeyAndIVFromPassword(
-        keySize: Int,
-        ivSize: Int,
-        data: ByteArray?,
-        salt: ByteArray? = null,
-        count: Int = 500): Array<ByteArray> {
-
-    val md = MessageDigest.getInstance("md5")
-
-    val both = arrayOf(ByteArray(keySize), ByteArray(ivSize))
-    val key = ByteArray(keySize)
-    var key_ix = 0
-    val iv = ByteArray(ivSize)
-    var iv_ix = 0
-    both[0] = key
-    both[1] = iv
-    var md_buf: ByteArray? = null
-    var nkey = keySize
-    var niv = ivSize
-    var i = 0
-    if (data == null) {
-        return both
+    private fun getIvParamSpecFromBytes(ivBytes: ByteArray): IvParameterSpec {
+        return IvParameterSpec(ivBytes)
     }
-    var addmd = 0
-    while (true) {
-        md.reset()
-        if (addmd++ > 0) {
-            md.update(md_buf)
+
+    private fun getIvParamSpec(): IvParameterSpec {
+        val secureRandom = SecureRandom()
+        val ivBytes = ByteArray(16)
+        secureRandom.nextBytes(ivBytes)
+        return IvParameterSpec(ivBytes)
+    }
+
+    private fun createAesKey(password: String): SecretKeySpec {
+        val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+        val keySpec = PBEKeySpec(password.toCharArray(), byteArrayOf(0), 65536, 128)
+        val pbeSecretKey = secretKeyFactory.generateSecret(keySpec)
+        return SecretKeySpec(pbeSecretKey.encoded, "AES")
+    }
+
+    private fun createAesKeyFromBytes(keyBytes: ByteArray): SecretKeySpec {
+        return SecretKeySpec(keyBytes, "AES")
+    }
+
+    private fun createKeyAndIVFromPassword(
+            keySize: Int,
+            ivSize: Int,
+            data: ByteArray?,
+            salt: ByteArray? = null,
+            count: Int = 500): Array<ByteArray> {
+
+        val md = MessageDigest.getInstance("md5")
+
+        val both = arrayOf(ByteArray(keySize), ByteArray(ivSize))
+        val key = ByteArray(keySize)
+        var key_ix = 0
+        val iv = ByteArray(ivSize)
+        var iv_ix = 0
+        both[0] = key
+        both[1] = iv
+        var md_buf: ByteArray? = null
+        var nkey = keySize
+        var niv = ivSize
+        var i = 0
+        if (data == null) {
+            return both
         }
-        md.update(data)
-        if (null != salt) {
-            md.update(salt, 0, 8)
-        }
-        md_buf = md.digest()
-        i = 1
-        while (i < count) {
+        var addmd = 0
+        while (true) {
             md.reset()
-            md.update(md_buf)
+            if (addmd++ > 0) {
+                md.update(md_buf)
+            }
+            md.update(data)
+            if (null != salt) {
+                md.update(salt, 0, 8)
+            }
             md_buf = md.digest()
-            i++
+            i = 1
+            while (i < count) {
+                md.reset()
+                md.update(md_buf)
+                md_buf = md.digest()
+                i++
+            }
+            i = 0
+            if (nkey > 0) {
+                while (true) {
+                    if (nkey == 0)
+                        break
+                    if (i == md_buf!!.size)
+                        break
+                    key[key_ix++] = md_buf[i]
+                    nkey--
+                    i++
+                }
+            }
+            if (niv > 0 && i != md_buf!!.size) {
+                while (true) {
+                    if (niv == 0)
+                        break
+                    if (i == md_buf.size)
+                        break
+                    iv[iv_ix++] = md_buf[i]
+                    niv--
+                    i++
+                }
+            }
+            if (nkey == 0 && niv == 0) {
+                break
+            }
         }
         i = 0
-        if (nkey > 0) {
-            while (true) {
-                if (nkey == 0)
-                    break
-                if (i == md_buf!!.size)
-                    break
-                key[key_ix++] = md_buf[i]
-                nkey--
-                i++
-            }
+        while (i < md_buf!!.size) {
+            md_buf[i] = 0
+            i++
         }
-        if (niv > 0 && i != md_buf!!.size) {
-            while (true) {
-                if (niv == 0)
-                    break
-                if (i == md_buf.size)
-                    break
-                iv[iv_ix++] = md_buf[i]
-                niv--
-                i++
-            }
-        }
-        if (nkey == 0 && niv == 0) {
-            break
-        }
+        return both
     }
-    i = 0
-    while (i < md_buf!!.size) {
-        md_buf[i] = 0
-        i++
-    }
-    return both
 }
 
 data class EncryptCipherData(
