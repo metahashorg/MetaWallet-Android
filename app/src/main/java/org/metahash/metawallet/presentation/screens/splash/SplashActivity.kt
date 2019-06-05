@@ -178,7 +178,8 @@ class SplashActivity : BaseActivity() {
                                 webView.clearCache(true)
                                 fromUI({ webView.reload() }, 200)
                             })
-                        }
+                        },
+                        { p, c, cc, n -> importPrivateWallet(p, c, cc, n) }
                 ),
                 Constants.JS_BRIDGE)
     }
@@ -505,9 +506,11 @@ class SplashActivity : BaseActivity() {
         }
     }
 
-    private fun importWalletFromParams(privKey: String,
-                                       password: String, currency: String,
-                                       code: String, name: String) {
+    private fun importWalletFromParams(
+            privKey: String,
+            password: String, currency: String,
+            code: String, name: String
+    ) {
         val bytes = privKey.toUpperCase().hexStringToByteArray()
         val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
         if (wallet != null) {
@@ -532,6 +535,14 @@ class SplashActivity : BaseActivity() {
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.IMPORTRESULT, wallet.address)
             })
         }
+    }
+
+    private fun importPrivateWallet(
+            password: String, currency: String,
+            currencyCode: String, name: String
+    ) {
+        val privateKey = PrivateWalletHelper.createWalletFromPrivateKey(password)
+        importWalletFromParams(privateKey ?: "", password, currency, currencyCode, name)
     }
 
     private fun showLoadingOrError(show: Boolean = true, loading: Boolean = true) {
@@ -563,6 +574,7 @@ class SplashActivity : BaseActivity() {
         val result = KeyFormatter.formatKey(resultData)
         when {
             KeyFormatter.isEncryptedFormat(result) -> {
+                PrivateWalletHelper.privateKeyInfo = result
                 JsFunctionCaller.callFunction(webView,
                         JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
                         "",

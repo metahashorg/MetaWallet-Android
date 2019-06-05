@@ -1,13 +1,12 @@
 apply plugin: 'com.android.application'
-
 apply plugin: 'kotlin-android'
-
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 ext {
     androidSupport = '28.0.0'
     rxJava2 = '2.1.16'
-    rxAndroid = '2.0.2'
+    rxAndroid = '2.1.0'
     retrofit = '2.4.0'
     hawkDb = '2.0.1'
 }
@@ -25,8 +24,15 @@ android {
         multiDexEnabled true
         externalNativeBuild {
             cmake {
-                cppFlags ""
+                abiFilters "armeabi-v7a", "x86"
+                arguments "-DANDROID_ARM_NEON=TRUE"
+                arguments "-DANDROID_ARM_MODE=arm"
+                cppFlags "-std=c++11"
+                cppFlags "-fexceptions"
             }
+        }
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
         }
     }
     buildTypes {
@@ -39,6 +45,10 @@ android {
         cmake {
             path "CMakeLists.txt"
         }
+    }
+    sourceSets.main {
+        jni.srcDirs = []
+        jniLibs.srcDirs 'src/main/jniLibs'
     }
 }
 
@@ -56,7 +66,7 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofit"
     implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofit"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit"
-    implementation 'com.squareup.okhttp3:logging-interceptor:3.11.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.12.0'
 
     implementation "android.arch.lifecycle:extensions:1.1.1"
     kapt "android.arch.lifecycle:compiler:1.1.1"

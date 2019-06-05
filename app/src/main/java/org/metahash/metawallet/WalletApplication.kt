@@ -1,6 +1,5 @@
 package org.metahash.metawallet
 
-import android.app.Application
 import android.arch.lifecycle.ProcessLifecycleOwner
 import android.content.Context
 import android.provider.Settings
@@ -36,6 +35,11 @@ class WalletApplication : MultiDexApplication(), AppLifecycleProvider {
             Settings.Secure.getString(WalletApplication.appContext.contentResolver,
                     Settings.Secure.ANDROID_ID)
         }
+
+        init {
+            System.loadLibrary("native-lib")
+        }
+
         val activityHandler = UserActivityHandler()
 
         private fun initApi(): ServiceApi {

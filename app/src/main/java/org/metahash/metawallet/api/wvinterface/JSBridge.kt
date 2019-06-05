@@ -1,8 +1,6 @@
 package org.metahash.metawallet.api.wvinterface
 
-import android.util.Log
 import android.webkit.JavascriptInterface
-import kotlin.math.log
 
 class JSBridge(
         private val onAuth: (String, String) -> Unit,
@@ -20,7 +18,8 @@ class JSBridge(
         private val onGetAppVersion: () -> String,
         private val onStartQr: () -> Unit,
         private val onImport: (String, String, String, String, String, String) -> Unit,
-        private val onClearCache: () -> Unit) {
+        private val onClearCache: () -> Unit,
+        private val onImportPrivateWallet: (String, String, String, String) -> Unit) {
 
     //method to login
     @JavascriptInterface
@@ -55,7 +54,7 @@ class JSBridge(
 
     @JavascriptInterface
     fun sendTx(from: String, password: String, to: String,
-                  amount: String, fee: String, data: String, currency: String) {
+               amount: String, fee: String, data: String, currency: String) {
         onCreateTransactionNew.invoke(from, password, to, amount, fee, data, currency)
     }
 
@@ -97,5 +96,10 @@ class JSBridge(
     @JavascriptInterface
     fun clearCache() {
         onClearCache.invoke()
+    }
+
+    @JavascriptInterface
+    fun importPrivateWallet(password: String, currency: String, currencyCode: String, name: String) {
+        onImportPrivateWallet.invoke(password, currency, currencyCode, name)
     }
 }

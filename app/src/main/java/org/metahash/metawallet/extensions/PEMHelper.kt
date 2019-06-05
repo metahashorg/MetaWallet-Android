@@ -45,24 +45,30 @@ object PEMHelper {
 
     fun parsePEMString(data: String): PEMInfo? {
         var pemInfo: PEMInfo? = null
-        StringReader(data).use { stringReader ->
-            PemReader(stringReader).use { pemReader ->
-                val pemObject = pemReader.readPemObject()
-                val dekHeader: PemHeader? =
-                        pemObject.headers.firstOrNull {
-                            (it as? PemHeader)?.name == DEK_HEADER_NAME
-                        } as? PemHeader
-                pemInfo = PEMInfo(pemObject.content, hexToIVBytes(dekHeader?.value ?: ""))
+        try {
+            StringReader(data).use { stringReader ->
+                PemReader(stringReader).use { pemReader ->
+                    val pemObject = pemReader.readPemObject()
+                    val dekHeader: PemHeader? =
+                            pemObject.headers.firstOrNull {
+                                (it as? PemHeader)?.name == DEK_HEADER_NAME
+                            } as? PemHeader
+                    pemInfo = PEMInfo(pemObject.content, hexToIVBytes(dekHeader?.value ?: ""))
+                }
             }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
         }
         return pemInfo
     }
 
-    private fun hexToIVBytes(data: String): ByteArray =
-            data
-                    .replace(DEK_HEADER_CONST_VALUE, "")
-                    .toUpperCase()
-                    .hexStringToByteArray()
+    private fun hexToIVBytes(data: String): ByteArray {
+        return data
+                .replace(DEK_HEADER_CONST_VALUE, "")
+                .toUpperCase()
+                .hexStringToByteArray()
+    }
+
 
     private fun ivBytesToHex(bytes: ByteArray): String = CryptoExt.bytesToHex(bytes)
 

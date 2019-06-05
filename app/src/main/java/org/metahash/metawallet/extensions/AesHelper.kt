@@ -100,14 +100,14 @@ object AesHelper {
         return SecretKeySpec(keyBytes, "AES")
     }
 
-    private fun createKeyAndIVFromPassword(
+    fun createKeyAndIVFromPassword(
             keySize: Int,
             ivSize: Int,
             data: ByteArray?,
             salt: ByteArray? = null,
             count: Int = 500): Array<ByteArray> {
 
-        val md = MessageDigest.getInstance("md5")
+        val md = MessageDigest.getInstance("MD5")
 
         val both = arrayOf(ByteArray(keySize), ByteArray(ivSize))
         val key = ByteArray(keySize)

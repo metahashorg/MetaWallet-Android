@@ -17,6 +17,8 @@ add_library( # Sets the name of the library.
              SHARED
 
              # Provides a relative path to your source file(s).
+             src/main/cpp/KeyGenerator.h
+             src/main/cpp/KeyGenerator.cpp
              src/main/cpp/native-lib.cpp )
 
 # Searches for a specified prebuilt library and stores the path as a
@@ -32,13 +34,34 @@ find_library( # Sets the name of the path variable.
               # you want CMake to locate.
               log )
 
+
+add_library(crypto STATIC IMPORTED)
+set_target_properties(crypto
+  PROPERTIES
+  IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/lib/libcrypto.a
+  INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/include)
+
+
+
+add_library(ssl STATIC IMPORTED)
+set_target_properties(ssl
+  PROPERTIES
+  IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/lib/libssl.a
+  INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/include)
+
+  find_library( z-lib z )
+
+  include_directories( ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/include )
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
                        native-lib
-
+                       crypto
+                       ssl
+                       ${z-lib}
                        # Links the target library to the log library
                        # included in the NDK.
-                       ${log-lib} )
+                       ${log-lib})
