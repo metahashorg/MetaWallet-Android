@@ -17,6 +17,7 @@ import android.webkit.*
 import android.widget.TextView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposables
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.BuildConfig
@@ -45,6 +46,9 @@ class SplashActivity : BaseActivity() {
     private val vLoading by bind<View>(R.id.vLoading)
     private val tvLoading by bind<TextView>(R.id.tv1)
     private val tvError by bind<View>(R.id.tv2)
+
+    private var mMHCWalletsDisposable = Disposables.disposed()
+    private var mTMHWalletsDisposable = Disposables.disposed()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,12 +106,15 @@ class SplashActivity : BaseActivity() {
 
     private fun openQrScanner() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
+            == PackageManager.PERMISSION_GRANTED
+        ) {
             startActivityForResult(Intent(this, QrReaderActivity::class.java), REQUEST_READ_KEY)
         } else {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.CAMERA),
-                    REQUEST_CAMERA_PERM)
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.CAMERA),
+                REQUEST_CAMERA_PERM
+            )
         }
     }
 
@@ -133,55 +140,55 @@ class SplashActivity : BaseActivity() {
     @SuppressLint("AddJavascriptInterface")
     private fun registerJSCallbacks() {
         webView.addJavascriptInterface(
-                JSBridge(
-                        //sign in
-                        { l, p -> login(l, p) },
-                        //get user login
-                        { WalletApplication.dbHelper.getLogin() },
-                        //get wallets by currency
-                        { getWallets(it) },
-                        //get history by currency
-                        { getHistory(it) },
-                        //create address
-                        { name, pas, cur, code ->
-                            createNewAddress(name, pas, cur, code)
-                        },
-                        //create transaction
-                        { p1, p2, p3, p4, p5, p6 ->
-                            createTransaction(p1, p2, p3, p4, p5, p6, Constants.TYPE_TMH.toString())
-                        },
-                        //create transaction new
-                        { p1, p2, p3, p4, p5, p6, p7 ->
-                            createTransaction(p1, p2, p3, p4, p5, p6, p7)
-                        },
-                        //logout
-                        { logout() },
-                        // register
-                        { login, pass -> register(login, pass) },
-                        //set only local wallets
-                        { setOnlyLocal(it) },
-                        //get only local parameter
-                        { WalletApplication.dbHelper.isOnlyLocalWallets() },
-                        //method to get private key
-                        { address, password -> getPrivateKyByAddress(address, password) },
-                        //get app version
-                        { BuildConfig.VERSION_NAME },
-                        //start reading qr code
-                        { fromUI({ openQrScanner() }) },
-                        //create wallet from import
-                        { a, k, p, c, code, n ->
-                            importWalletFromParams(k, p, c, code, n)
-                        },
-                        //clear cache
-                        {
-                            fromUI({
-                                webView.clearCache(true)
-                                fromUI({ webView.reload() }, 200)
-                            })
-                        },
-                        { p, c, cc, n -> importPrivateWallet(p, c, cc, n) }
-                ),
-                Constants.JS_BRIDGE)
+            JSBridge(
+                //sign in
+                { l, p -> login(l, p) },
+                //get user login
+                { WalletApplication.dbHelper.getLogin() },
+                //get wallets by currency
+                { getWallets(it) },
+                //get history by currency
+                { getHistory(it) },
+                //create address
+                { name, pas, cur, code ->
+                    createNewAddress(name, pas, cur, code)
+                },
+                //create transaction
+                { p1, p2, p3, p4, p5, p6 ->
+                    createTransaction(p1, p2, p3, p4, p5, p6, Constants.TYPE_TMH.toString())
+                },
+                //create transaction new
+                { p1, p2, p3, p4, p5, p6, p7 ->
+                    createTransaction(p1, p2, p3, p4, p5, p6, p7)
+                },
+                //logout
+                { logout() },
+                // register
+                { login, pass -> register(login, pass) },
+                //set only local wallets
+                { setOnlyLocal(it) },
+                //get only local parameter
+                { WalletApplication.dbHelper.isOnlyLocalWallets() },
+                //method to get private key
+                { address, password -> getPrivateKyByAddress(address, password) },
+                //get app version
+                { BuildConfig.VERSION_NAME },
+                //start reading qr code
+                { fromUI({ openQrScanner() }) },
+                //create wallet from import
+                { a, k, p, c, code, n ->
+                    importWalletFromParams(k, p, c, code, n)
+                },
+                //clear cache
+                {
+                    fromUI({
+                        webView.clearCache(true)
+                        fromUI({ webView.reload() }, 200)
+                    })
+                },
+                { p, c, cc, n -> importPrivateWallet(p, c, cc, n) }
+            ),
+            Constants.JS_BRIDGE)
     }
 
     private fun checkDeepLink() {
@@ -203,46 +210,48 @@ class SplashActivity : BaseActivity() {
 
     private fun login(login: String, password: String) {
         addSubscription(WalletApplication.api.login(login, password)
-                .subscribe(
-                        {
-                            if (it.isOk()) {
-                                setActionListener()
-                                WalletApplication.dbHelper
-                                        .setToken(it.data.token)
-                                WalletApplication.dbHelper
-                                        .setRefreshToken(it.data.refreshToken)
-                                WalletApplication.dbHelper
-                                        .setLogin(login)
-                                JsFunctionCaller.callFunction(
-                                        webView,
-                                        JsFunctionCaller.FUNCTION.LOGINRESULT,
-                                        "", "")
-                                checkUnsynchronizedWallets()
-                                startBalancesObserving()
-                            }
-                        },
-                        {
-                            handleLoginResponseError(it, webView)
-                        }
-                ))
+            .subscribe(
+                {
+                    if (it.isOk()) {
+                        setActionListener()
+                        WalletApplication.dbHelper
+                            .setToken(it.data.token)
+                        WalletApplication.dbHelper
+                            .setRefreshToken(it.data.refreshToken)
+                        WalletApplication.dbHelper
+                            .setLogin(login)
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.LOGINRESULT,
+                            "", ""
+                        )
+                        checkUnsynchronizedWallets()
+                        startBalancesObserving()
+                    }
+                },
+                {
+                    handleLoginResponseError(it, webView)
+                }
+            ))
     }
 
     private fun register(login: String, password: String) {
         addSubscription(WalletApplication.api.register(login, password)
-                .subscribe(
-                        {
-                            if (it.isOk()) {
-                                JsFunctionCaller.callFunction(
-                                        webView,
-                                        JsFunctionCaller.FUNCTION.REGISTERRESULT,
-                                        "", "")
-                                login(login, password)
-                            }
-                        },
-                        {
-                            handleRegisterResponseError(it, webView)
-                        }
-                ))
+            .subscribe(
+                {
+                    if (it.isOk()) {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.REGISTERRESULT,
+                            "", ""
+                        )
+                        login(login, password)
+                    }
+                },
+                {
+                    handleRegisterResponseError(it, webView)
+                }
+            ))
     }
 
     private fun ping(type: Proxy.TYPE) {
@@ -250,8 +259,10 @@ class SplashActivity : BaseActivity() {
             override fun onComplete() {
                 if (type == Proxy.TYPE.PROD) {
                     val info = WalletApplication.gson.toJson(ResolvingResult(type, ResolvingInfo(3)))
-                    JsFunctionCaller.callFunction(webView,
-                            JsFunctionCaller.FUNCTION.UPDATERESOLVING, info)
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.UPDATERESOLVING, info
+                    )
                     WalletApplication.api.saveProxy()
                     refreshToken()
                 } else {
@@ -261,87 +272,119 @@ class SplashActivity : BaseActivity() {
             }
 
             override fun onNext(t: String) {
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.UPDATERESOLVING, t)
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.UPDATERESOLVING, t
+                )
             }
 
             override fun onError(e: Throwable) {
                 e.printStackTrace()
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.ONIPREADY, false)
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.ONIPREADY, false
+                )
             }
         }
-        addSubscription(WalletApplication.api.ping(type)
+        addSubscription(
+            WalletApplication.api.ping(type)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(obs))
+                .subscribeWith(obs)
+        )
     }
 
     private fun refreshToken() {
         if (WalletApplication.dbHelper.hasToken()) {
             //refresh token and return token
             addSubscription(WalletApplication.api.refreshToken()
-                    .subscribe(
-                            {
-                                if (it.isOk()) {
-                                    setActionListener()
-                                    WalletApplication.dbHelper
-                                            .setToken(it.data.token)
-                                    WalletApplication.dbHelper
-                                            .setRefreshToken(it.data.refreshToken)
+                .subscribe(
+                    {
+                        if (it.isOk()) {
+                            setActionListener()
+                            WalletApplication.dbHelper
+                                .setToken(it.data.token)
+                            WalletApplication.dbHelper
+                                .setRefreshToken(it.data.refreshToken)
 
-                                    JsFunctionCaller.callFunction(webView,
-                                            JsFunctionCaller.FUNCTION.ONIPREADY, true)
-                                    checkUnsynchronizedWallets()
-                                    startBalancesObserving()
-                                    checkDeepLink()
-                                } else {
-                                    JsFunctionCaller.callFunction(webView,
-                                            JsFunctionCaller.FUNCTION.ONIPREADY, false)
-                                }
-                            },
-                            {
-                                JsFunctionCaller.callFunction(webView,
-                                        JsFunctionCaller.FUNCTION.ONIPREADY, false)
-                                it.printStackTrace()
-                            }
-                    ))
+                            JsFunctionCaller.callFunction(
+                                webView,
+                                JsFunctionCaller.FUNCTION.ONIPREADY, true
+                            )
+                            checkUnsynchronizedWallets()
+                            startBalancesObserving()
+                            checkDeepLink()
+                        } else {
+                            JsFunctionCaller.callFunction(
+                                webView,
+                                JsFunctionCaller.FUNCTION.ONIPREADY, false
+                            )
+                        }
+                    },
+                    {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.ONIPREADY, false
+                        )
+                        it.printStackTrace()
+                    }
+                ))
         } else {
-            JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.ONIPREADY, false)
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.ONIPREADY, false
+            )
         }
     }
 
     private fun getWallets(currency: String) {
         Log.d("MIINE", "getWallets: $currency")
-        addSubscription(
-                WalletApplication.api.getAllWalletsAndBalance(
-                        currency, WalletApplication.dbHelper.isOnlyLocalWallets())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(
-                                {
-                                    Log.d("MIINE", "getWallets response: $currency")
-                                    JsFunctionCaller.callFunction(webView,
-                                            JsFunctionCaller.FUNCTION.WALLETSRESULT, it, currency)
-                                },
-                                {
-                                    handleCommonError(it, webView)
-                                }
-                        ))
+        if (currency == Constants.TYPE_MHC.toString()) {
+            mMHCWalletsDisposable.dispose()
+        } else {
+            mTMHWalletsDisposable.dispose()
+        }
+        WalletApplication.api.getAllWalletsAndBalance(
+            currency, WalletApplication.dbHelper.isOnlyLocalWallets()
+        )
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    Log.d("MIINE", "getWallets response: $currency")
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.WALLETSRESULT, it, currency
+                    )
+                },
+                {
+                    handleCommonError(it, webView)
+                }
+            )
+            .apply {
+                if (currency == Constants.TYPE_MHC.toString()) {
+                    mMHCWalletsDisposable = this
+                } else {
+                    mTMHWalletsDisposable = this
+                }
+                addSubscription(this)
+            }
     }
 
     private fun getHistory(currency: String) {
         addSubscription(WalletApplication.api.getHistory(
-                currency, WalletApplication.dbHelper.isOnlyLocalWallets())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            JsFunctionCaller.callFunction(webView,
-                                    JsFunctionCaller.FUNCTION.HISTORYRESULT, it, currency)
-                        },
-                        {
-                            handleCommonError(it, webView)
-                        }
-                ))
+            currency, WalletApplication.dbHelper.isOnlyLocalWallets()
+        )
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.HISTORYRESULT, it, currency
+                    )
+                },
+                {
+                    handleCommonError(it, webView)
+                }
+            ))
     }
 
     private fun createNewAddress(name: String, password: String, currency: String, code: String) {
@@ -355,7 +398,12 @@ class SplashActivity : BaseActivity() {
             //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
             //sync wallet
-            syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
+            syncWallet(
+                wallet.address,
+                CryptoExt.publicKeyToHex(wallet.publicKey),
+                wallet.currency.toInt(),
+                wallet.name
+            )
             fromUI({
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.NEWWALLERRESULT, wallet.address)
             })
@@ -366,49 +414,59 @@ class SplashActivity : BaseActivity() {
         }
     }
 
-    private fun createTransaction(from: String, password: String, to: String,
-                                  amount: String, fee: String, data: String, currency: String) {
+    private fun createTransaction(
+        from: String, password: String, to: String,
+        amount: String, fee: String, data: String, currency: String
+    ) {
         val wallet = WalletApplication.dbHelper.getUserWalletByAddress(from, WalletApplication.dbHelper.getLogin())
         if (wallet == null) {
             //send error here
-            JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "NO_PRIVATE_KEY_FOUND")
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "NO_PRIVATE_KEY_FOUND"
+            )
             return
         }
         if (wallet.password != password) {
-            JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "WRONG_PASSWORD")
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.TRASACTIONRESULT, "WRONG_PASSWORD"
+            )
             return
         }
         addSubscription(WalletApplication.api.getBalance(wallet.address, wallet.currency.toInt())
-                .observeOn(Schedulers.computation())
-                .flatMap {
-                    val nonce = it.result.countSpent + 1
-                    val tx = CryptoExt.createTransaction(wallet, to, password, nonce.toString(), amount, fee, data)
-                    fromUI({
-                        val res = WalletApplication.api.mapTxResultToString(CreateTxResult(1))
-                        JsFunctionCaller.callFunction(webView,
-                                JsFunctionCaller.FUNCTION.TXINFORESULT, res)
-                    })
-                    val string = WalletApplication.gson.toJson(tx)
-                    Log.d("MIINE", "tx: $string")
-                    WalletApplication.api.createTransaction(tx, wallet.currency.toInt())
-                }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            val res = WalletApplication.api.mapTxResultToString(it)
-                            JsFunctionCaller.callFunction(webView,
-                                    JsFunctionCaller.FUNCTION.TXINFORESULT, res)
-                            if (it.isProxyReady()) {
-                                startTrxCheck(it, wallet.currency.toInt())
-                            }
+            .observeOn(Schedulers.computation())
+            .flatMap {
+                val nonce = it.result.countSpent + 1
+                val tx = CryptoExt.createTransaction(wallet, to, password, nonce.toString(), amount, fee, data)
+                fromUI({
+                    val res = WalletApplication.api.mapTxResultToString(CreateTxResult(1))
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.TXINFORESULT, res
+                    )
+                })
+                val string = WalletApplication.gson.toJson(tx)
+                Log.d("MIINE", "tx: $string")
+                WalletApplication.api.createTransaction(tx, wallet.currency.toInt())
+            }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    val res = WalletApplication.api.mapTxResultToString(it)
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.TXINFORESULT, res
+                    )
+                    if (it.isProxyReady()) {
+                        startTrxCheck(it, wallet.currency.toInt())
+                    }
 
-                        },
-                        {
-                            handleCommonError(it, webView)
-                        }
-                ))
+                },
+                {
+                    handleCommonError(it, webView)
+                }
+            ))
     }
 
     private fun startTrxCheck(result: CreateTxResult, currencyId: Int) {
@@ -418,8 +476,10 @@ class SplashActivity : BaseActivity() {
             override fun onNext(result: CreateTxResult) {
                 //update status
                 val res = WalletApplication.api.mapTxResultToString(result)
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.TXINFORESULT, res)
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.TXINFORESULT, res
+                )
                 if (result.isTorrentSuccessful()) {
                     dispose()
                 }
@@ -430,69 +490,99 @@ class SplashActivity : BaseActivity() {
             }
         }
         addSubscription(
-                WalletApplication.api.getTxInfo(result, MAX_INFO_TRY_COUNT, currencyId)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeWith(obs))
+            WalletApplication.api.getTxInfo(result, MAX_INFO_TRY_COUNT, currencyId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(obs)
+        )
     }
 
     private fun checkUnsynchronizedWallets() {
         val list = WalletApplication.dbHelper.getUnsynchonizedWallets(WalletApplication.dbHelper.getLogin())
         list.forEach {
             syncWallet(
-                    it.address,
-                    CryptoExt.publicKeyToHex(it.publicKey),
-                    it.currency.toInt())
+                it.address,
+                CryptoExt.publicKeyToHex(it.publicKey),
+                it.currency.toInt(),
+                it.name
+            )
         }
     }
 
-    private fun syncWallet(address: String, pubKey: String, currency: Int) {
-        addSubscription(WalletApplication.api.syncWallet(address, pubKey, currency)
-                .subscribe(
-                        {
-                            if (it.isOk()) {
-                                //update wallet
-                                WalletApplication.dbHelper.setWalletSynchronized(address, WalletApplication.dbHelper.getLogin())
-                            }
-                        },
-                        {
-                            if (it is ResponseError) {
-                                handleCommonError(it, webView)
-                                if (it.code.contains("exists", true) ||
-                                        it.message?.contains("exists", true) == true) {
-                                    //update wallet
-                                    WalletApplication.dbHelper.setWalletSynchronized(address, WalletApplication.dbHelper.getLogin())
-                                }
-                            }
-                            it.printStackTrace()
+    private fun syncWallet(
+        address: String,
+        pubKey: String,
+        currency: Int,
+        walletName: String
+    ) {
+        addSubscription(WalletApplication.api.syncWallet(address, pubKey, currency, walletName)
+            .subscribe(
+                {
+                    if (it.isOk()) {
+                        //update wallet
+                        WalletApplication.dbHelper.setWalletSynchronized(
+                            address,
+                            WalletApplication.dbHelper.getLogin()
+                        )
+                    }
+                },
+                {
+                    if (it is ResponseError) {
+                        handleCommonError(it, webView)
+                        if (it.code.contains("exists", true) ||
+                            it.message?.contains("exists", true) == true
+                        ) {
+                            //update wallet
+                            WalletApplication.dbHelper.setWalletSynchronized(
+                                address,
+                                WalletApplication.dbHelper.getLogin()
+                            )
                         }
-                ))
+                    }
+                    it.printStackTrace()
+                }
+            ))
     }
 
     private fun startBalancesObserving() {
-        addSubscription(Observable.interval(10, TimeUnit.SECONDS)
-                .switchMap {
-                    WalletApplication.api.isBalanceChanged("1")
-                }
+        return
+        addSubscription(
+            WalletApplication.api.startBalanceObserving(Constants.TYPE_MHC)
                 .subscribe(
-                        { changed ->
-                            if (changed) {
-                                JsFunctionCaller.callFunction(webView,
-                                        JsFunctionCaller.FUNCTION.ONDATACHANGED)
-                            }
-                        },
-                        {
-                            it.printStackTrace()
-                        }
+                    {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.ONDATACHANGED
+                        )
+                    },
+                    {
+                        it.printStackTrace()
+                    }
+                ))
+        addSubscription(
+            WalletApplication.api.startBalanceObserving(Constants.TYPE_TMH)
+                .subscribe(
+                    {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.ONDATACHANGED
+                        )
+                    },
+                    {
+                        it.printStackTrace()
+                    }
                 ))
     }
 
     private fun getPrivateKyByAddress(address: String, password: String): String {
-        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(address,
-                WalletApplication.dbHelper.getLogin()) ?: return ""
+        val wallet = WalletApplication.dbHelper.getUserWalletByAddress(
+            address,
+            WalletApplication.dbHelper.getLogin()
+        ) ?: return ""
         if (wallet.password != password) {
             return ""
         }
-        return CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
+        val data = PrivateWalletHelper.encryptWalletPrivateKey(wallet.privateKeyPKCS1, password)
+        return data
     }
 
     private fun importWalletByPrivateKey(key: String) {
@@ -501,15 +591,17 @@ class SplashActivity : BaseActivity() {
         if (wallet != null) {
             val pub = CryptoExt.publicKeyToHex(wallet.publicKey)
             val priv = CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1)
-            JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET, key, wallet.address, "")
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET, key, wallet.address, ""
+            )
         }
     }
 
     private fun importWalletFromParams(
-            privKey: String,
-            password: String, currency: String,
-            code: String, name: String
+        privKey: String,
+        password: String, currency: String,
+        code: String, name: String
     ) {
         val bytes = privKey.toUpperCase().hexStringToByteArray()
         val wallet = CryptoExt.createWalletFromPrivateKey(bytes)
@@ -520,17 +612,8 @@ class SplashActivity : BaseActivity() {
             wallet.userLogin = WalletApplication.dbHelper.getLogin()
             wallet.password = password
 
-            //check if such a wallet exists
-            val userWallet = WalletApplication.dbHelper.getUserWalletByAddress(wallet.address,
-                    WalletApplication.dbHelper.getLogin())
-            if (userWallet == null) {
-                //save wallet
-                WalletApplication.dbHelper.setUserWallet(wallet)
-                //sync wallet
-                syncWallet(wallet.address, CryptoExt.publicKeyToHex(wallet.publicKey), wallet.currency.toInt())
-            } else {
-                WalletApplication.dbHelper.updateUserWallet(wallet, WalletApplication.dbHelper.getLogin())
-            }
+            saveOrUpdateWallet(wallet)
+
             fromUI({
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.IMPORTRESULT, wallet.address)
             })
@@ -538,11 +621,56 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun importPrivateWallet(
-            password: String, currency: String,
-            currencyCode: String, name: String
+        password: String, currency: String,
+        currencyCode: String, name: String
     ) {
-        val privateKey = PrivateWalletHelper.createWalletFromPrivateKey(password)
-        importWalletFromParams(privateKey ?: "", password, currency, currencyCode, name)
+        val privateWallet = PrivateWalletHelper.createWalletFromPrivateKey(password)
+        if (privateWallet != null) {
+            privateWallet.name = name
+            privateWallet.currency = currency
+            privateWallet.code = currencyCode
+            privateWallet.userLogin = WalletApplication.dbHelper.getLogin()
+            privateWallet.password = password
+
+            saveOrUpdateWallet(privateWallet)
+
+            fromUI({
+                Log.d("MIINE", "imported, address: ${privateWallet.address}")
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.IMPORTPRIVATERESULT, "OK", privateWallet.address
+                )
+            })
+        } else {
+            fromUI({
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.IMPORTPRIVATERESULT, "INCORRECT_KEY", ""
+                )
+            })
+        }
+    }
+
+    private fun saveOrUpdateWallet(wallet: Wallet) {
+        //check if such a wallet exists
+        val userWallet =
+            WalletApplication.dbHelper.getUserWalletByAddress(
+                wallet.address,
+                WalletApplication.dbHelper.getLogin()
+            )
+        if (userWallet == null) {
+            //save wallet
+            WalletApplication.dbHelper.setUserWallet(wallet)
+            //sync wallet
+            syncWallet(
+                wallet.address,
+                CryptoExt.publicKeyToHex(wallet.publicKey),
+                wallet.currency.toInt(),
+                wallet.name
+            )
+        } else {
+            WalletApplication.dbHelper.updateUserWallet(wallet, WalletApplication.dbHelper.getLogin())
+        }
     }
 
     private fun showLoadingOrError(show: Boolean = true, loading: Boolean = true) {
@@ -564,37 +692,45 @@ class SplashActivity : BaseActivity() {
     private fun processQRReaderResult(resultData: String) {
         if (resultData.isEmpty()) {
             //error while reading qr
-            JsFunctionCaller.callFunction(webView,
-                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
-                    "",
-                    "",
-                    getString(R.string.error_rq_code_read))
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                "",
+                "",
+                getString(R.string.error_rq_code_read)
+            )
             return
         }
         val result = KeyFormatter.formatKey(resultData)
         when {
             KeyFormatter.isEncryptedFormat(result) -> {
                 PrivateWalletHelper.privateKeyInfo = result
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
-                        "",
-                        "",
-                        getString(R.string.error_encrypted_private_key))
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                    "",
+                    "",
+                    getString(R.string.error_encrypted_private_key)
+                )
             }
             !KeyFormatter.isKeyFormat(result) -> {
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
-                        "",
-                        "",
-                        getString(R.string.error_invalid_private_key))
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                    "",
+                    "",
+                    getString(R.string.error_invalid_private_key)
+                )
             }
             KeyFormatter.isSECP256k1(result) -> importWalletByPrivateKey(result)
             else -> {
-                JsFunctionCaller.callFunction(webView,
-                        JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
-                        "",
-                        "",
-                        getString(R.string.error_wrong_rq_code_format))
+                JsFunctionCaller.callFunction(
+                    webView,
+                    JsFunctionCaller.FUNCTION.SAVEIMPORTEDWALLET,
+                    "",
+                    "",
+                    getString(R.string.error_wrong_rq_code_format)
+                )
             }
         }
     }

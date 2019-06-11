@@ -34,6 +34,7 @@ object ServiceRequestFactory {
     private const val KEY_PUBKEY = "pubkey"
     private const val KEY_SIGN = "sign"
     private const val KEY_HASH = "hash"
+    private const val KEY_NAME = "name"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -110,12 +111,13 @@ object ServiceRequestFactory {
         }
     }
 
-    fun getSyncWalletParams(address: String, pubKey: String, currency: Int): JsonArray {
+    fun getSyncWalletParams(address: String, pubKey: String, currency: Int, name: String): JsonArray {
         return JsonArray().apply {
             add(JsonObject().apply {
                 addProperty(KEY_CURRENCY, currency)
                 addProperty(KEY_ADDRESS, address)
                 addProperty(KEY_PUBKEY, pubKey)
+                addProperty(KEY_NAME, name)
             })
         }
     }

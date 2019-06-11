@@ -34,17 +34,17 @@ Java_org_metahash_metawallet_extensions_PrivateWalletHelper_decryptPrivateKey(
     BIO *originalPemBio = BIO_new(BIO_s_mem());
     int len = BIO_write(originalPemBio, sourceData, strlen(sourceData));
     if (len <= 0) {
-        return 0;
+        return nullptr;
     }
 
     EC_KEY *key = nullptr;
     key = PEM_read_bio_ECPrivateKey(originalPemBio, &key, nullptr, userPassword);
     if (!key) {
-        return 0;
+        return nullptr;
     }
     int result = BIO_free(originalPemBio);
     if (!result) {
-        return 0;
+        return nullptr;
     }
 
     EC_KEY_set_asn1_flag(key, OPENSSL_EC_NAMED_CURVE);
@@ -52,7 +52,7 @@ Java_org_metahash_metawallet_extensions_PrivateWalletHelper_decryptPrivateKey(
     BIO *derBio = BIO_new(BIO_s_mem());
     result = i2d_ECPrivateKey_bio(derBio, key);
     if (!result) {
-        return 0;
+        return nullptr;
     }
 
     char *derBuffer;
@@ -66,23 +66,52 @@ Java_org_metahash_metawallet_extensions_PrivateWalletHelper_decryptPrivateKey(
     return env->NewStringUTF(hex);
 }
 
-/*JNIEXPORT jstring JNICALL
-Java_ru_wearemad_newwallettest_MainActivity_stringFromMD5(
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_org_metahash_metawallet_extensions_PrivateWalletHelper_encryptPrivateKey(
         JNIEnv *env,
-        jobject thiz,
-        jstring srcjStr) {
+        jobject /* this */,
+        jbyteArray privateKey,
+        jstring userPass
+) {
 
-    const char *unicodeChar = env->GetStringUTFChars(srcjStr, NULL);
-    size_t unicodeCharLength = env->GetStringLength(srcjStr);
+    //key
+    int keyLength = env->GetArrayLength(privateKey);
+    auto *sourceData = reinterpret_cast<const unsigned char *>(as_unsigned_char_array(env,
+                                                                                      privateKey));
 
+    //password
+    auto *userPassword = (unsigned char *) env->GetStringUTFChars(userPass, JNI_FALSE);
 
-    unsigned char md[MD5_DIGEST_LENGTH];
-    int i;
-    char buf[33] = {'\0'};
-    MD5((unsigned char*)unicodeChar, unicodeCharLength, (unsigned char*)&md);
-    for (i = 0; i < 16; i++) {
-        sprintf(&buf[i*2], "%02x", md[i]);
+    EC_KEY *key = nullptr;
+
+    key = d2i_ECPrivateKey(&key, &sourceData, keyLength);
+    if (!key) {
+        return nullptr;
     }
-    env->ReleaseStringUTFChars(srcjStr, unicodeChar);
-    return env->NewStringUTF(buf);
-}*/
+
+    EC_KEY_set_asn1_flag(key, OPENSSL_EC_NAMED_CURVE);
+
+    const EVP_CIPHER *cipher = EVP_aes_128_cbc();
+
+    BIO *privateBio = BIO_new(BIO_s_mem());
+
+    int result = PEM_write_bio_ECPrivateKey(privateBio, key, cipher, nullptr, 0, nullptr,
+                                            userPassword);
+
+    if (!result) {
+        return nullptr;
+    }
+
+    char *tempBuffer;
+    BIO_get_mem_data(privateBio, &tempBuffer);
+    jstring resultString = env->NewStringUTF(tempBuffer);
+
+    //clear ref
+    env->DeleteLocalRef(privateKey);
+    env->DeleteLocalRef(userPass);
+    BIO_free(privateBio);
+    EC_KEY_free(key);
+
+    return resultString;
+}

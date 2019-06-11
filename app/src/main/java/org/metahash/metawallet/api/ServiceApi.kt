@@ -1,6 +1,8 @@
 package org.metahash.metawallet.api
 
+import android.util.Base64
 import io.reactivex.Observable
+import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Function3
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*
@@ -8,6 +10,7 @@ import org.metahash.metawallet.data.ProxyTorrentResolver
 import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.formatProxy
 import org.metahash.metawallet.extensions.formatTorrent
+import org.metahash.metawallet.extensions.toBase64
 import java.util.concurrent.TimeUnit
 
 class ServiceApi(private val api: Api) {
@@ -108,40 +111,42 @@ class ServiceApi(private val api: Api) {
         }
 
         return Observable.combineLatest(
-                createTxCmd
-                        .apply { baseProxyUrl = proxyList[0].ip.formatProxy() }
-                        .execute()
-                        .startWith(CreateTxResponse.wait())
-                        .onErrorReturnItem(CreateTxResponse.error()),
-                createTxCmd
-                        .apply { baseProxyUrl = proxyList[1].ip.formatProxy() }
-                        .execute()
-                        .startWith(CreateTxResponse.wait())
-                        .onErrorReturnItem(CreateTxResponse.error()),
-                createTxCmd
-                        .apply { baseProxyUrl = proxyList[2].ip.formatProxy() }
-                        .execute()
-                        .startWith(CreateTxResponse.wait())
-                        .onErrorReturnItem(CreateTxResponse.error()),
-                Function3<CreateTxResponse, CreateTxResponse, CreateTxResponse, CreateTxResult>
-                { r1, r2, r3 ->
-                    val id = when {
-                        r1.status == TXSTATUS.OK -> r1.params ?: ""
-                        r2.status == TXSTATUS.OK -> r2.params ?: ""
-                        r3.status == TXSTATUS.OK -> r3.params ?: ""
-                        else -> ""
-                    }
-                    val proxy = arrayOf(
-                            r1.status.toString().toLowerCase(),
-                            r2.status.toString().toLowerCase(),
-                            r3.status.toString().toLowerCase())
-
-                    val torrent = arrayOf(
-                            TXSTATUS.WAIT.toString().toLowerCase(),
-                            TXSTATUS.WAIT.toString().toLowerCase(),
-                            TXSTATUS.WAIT.toString().toLowerCase())
-                    CreateTxResult(id, 2, proxy, torrent)
+            createTxCmd
+                .apply { baseProxyUrl = proxyList[0].ip.formatProxy() }
+                .execute()
+                .startWith(CreateTxResponse.wait())
+                .onErrorReturnItem(CreateTxResponse.error()),
+            createTxCmd
+                .apply { baseProxyUrl = proxyList[1].ip.formatProxy() }
+                .execute()
+                .startWith(CreateTxResponse.wait())
+                .onErrorReturnItem(CreateTxResponse.error()),
+            createTxCmd
+                .apply { baseProxyUrl = proxyList[2].ip.formatProxy() }
+                .execute()
+                .startWith(CreateTxResponse.wait())
+                .onErrorReturnItem(CreateTxResponse.error()),
+            Function3<CreateTxResponse, CreateTxResponse, CreateTxResponse, CreateTxResult>
+            { r1, r2, r3 ->
+                val id = when {
+                    r1.status == TXSTATUS.OK -> r1.params ?: ""
+                    r2.status == TXSTATUS.OK -> r2.params ?: ""
+                    r3.status == TXSTATUS.OK -> r3.params ?: ""
+                    else -> ""
                 }
+                val proxy = arrayOf(
+                    r1.status.toString().toLowerCase(),
+                    r2.status.toString().toLowerCase(),
+                    r3.status.toString().toLowerCase()
+                )
+
+                val torrent = arrayOf(
+                    TXSTATUS.WAIT.toString().toLowerCase(),
+                    TXSTATUS.WAIT.toString().toLowerCase(),
+                    TXSTATUS.WAIT.toString().toLowerCase()
+                )
+                CreateTxResult(id, 2, proxy, torrent)
+            }
         )
     }
 
@@ -155,29 +160,30 @@ class ServiceApi(private val api: Api) {
         }
 
         return Observable.combineLatest(
-                obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = torrentList[0].ip.formatTorrent() }
-                        .execute(), maxTryCount = maxTryCount)
-                        .startWith(GetTxInfoResponse.wait())
-                        .onErrorReturnItem(GetTxInfoResponse.error()),
-                obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = torrentList[1].ip.formatTorrent() }
-                        .execute(), maxTryCount = maxTryCount)
-                        .startWith(GetTxInfoResponse.wait())
-                        .onErrorReturnItem(GetTxInfoResponse.error()),
-                obsToIntervalWithCount(getTxInfoCmd
-                        .apply { baseTorrentUrl = torrentList[2].ip.formatTorrent() }
-                        .execute(), maxTryCount = maxTryCount)
-                        .startWith(GetTxInfoResponse.wait())
-                        .onErrorReturnItem(GetTxInfoResponse.error()),
-                Function3<GetTxInfoResponse, GetTxInfoResponse, GetTxInfoResponse, CreateTxResult>
-                { r1, r2, r3 ->
-                    val torrent = arrayOf(
-                            r1.status.toString().toLowerCase(),
-                            r2.status.toString().toLowerCase(),
-                            r3.status.toString().toLowerCase())
-                    prevResult.copy(stage = 3, torrent = torrent)
-                }
+            obsToIntervalWithCount(getTxInfoCmd
+                .apply { baseTorrentUrl = torrentList[0].ip.formatTorrent() }
+                .execute(), maxTryCount = maxTryCount)
+                .startWith(GetTxInfoResponse.wait())
+                .onErrorReturnItem(GetTxInfoResponse.error()),
+            obsToIntervalWithCount(getTxInfoCmd
+                .apply { baseTorrentUrl = torrentList[1].ip.formatTorrent() }
+                .execute(), maxTryCount = maxTryCount)
+                .startWith(GetTxInfoResponse.wait())
+                .onErrorReturnItem(GetTxInfoResponse.error()),
+            obsToIntervalWithCount(getTxInfoCmd
+                .apply { baseTorrentUrl = torrentList[2].ip.formatTorrent() }
+                .execute(), maxTryCount = maxTryCount)
+                .startWith(GetTxInfoResponse.wait())
+                .onErrorReturnItem(GetTxInfoResponse.error()),
+            Function3<GetTxInfoResponse, GetTxInfoResponse, GetTxInfoResponse, CreateTxResult>
+            { r1, r2, r3 ->
+                val torrent = arrayOf(
+                    r1.status.toString().toLowerCase(),
+                    r2.status.toString().toLowerCase(),
+                    r3.status.toString().toLowerCase()
+                )
+                prevResult.copy(stage = 3, torrent = torrent)
+            }
         ).distinctUntilChanged()
     }
 
@@ -194,40 +200,54 @@ class ServiceApi(private val api: Api) {
 
     fun mapTxResultToString(result: CreateTxResult) = WalletApplication.gson.toJson(result)
 
-    fun syncWallet(address: String, pubKey: String, currency: Int): Observable<SyncWalletResponse> {
+    fun syncWallet(
+        address: String,
+        pubKey: String,
+        currency: Int,
+        walletName: String
+    ): Observable<SyncWalletResponse> {
         syncWalletCmd.address = address
         syncWalletCmd.currency = currency
         syncWalletCmd.pubKey = pubKey
+        syncWalletCmd.name = walletName.toBase64()
         return syncWalletCmd.execute()
-    }
-
-    fun isBalanceChanged(currency: String): Observable<Boolean> {
-        checkBalanceCmd.cur = currency.toInt()
-        return checkBalanceCmd.execute()
     }
 
     fun getTxParams(address: String, currency: Int) {
         txParamsCmd.address = address
         txParamsCmd.currency = currency
         txParamsCmd.execute()
-                .subscribe(
-                        {
-                            if (it != null) {
+            .subscribe(
+                {
+                    if (it != null) {
 
-                            }
-                        },
-                        {
-                            it.printStackTrace()
-                        }
-                )
+                    }
+                },
+                {
+                    it.printStackTrace()
+                }
+            )
+    }
+
+    fun startBalanceObserving(currency: Int): Observable<Boolean> {
+        return Observable.interval(10, 10, TimeUnit.SECONDS)
+            .switchMap { isBalanceChanged(currency) }
+            .filter { it }
+            .onErrorResumeNext(Observable.just(false))
+    }
+
+    private fun isBalanceChanged(currency: Int): Observable<Boolean> {
+        checkBalanceCmd.cur = currency
+        return checkBalanceCmd.execute()
     }
 
     private fun <R> obsToIntervalWithCount(
-            obs: Observable<R>,
-            delayInSec: Long = 2,
-            maxTryCount: Long = 3): Observable<R> {
+        obs: Observable<R>,
+        delayInSec: Long = 2,
+        maxTryCount: Long = 3
+    ): Observable<R> {
         return Observable.interval(delayInSec, TimeUnit.SECONDS)
-                .take(maxTryCount)
-                .switchMap { obs }
+            .take(maxTryCount)
+            .switchMap { obs }
     }
 }

@@ -15,11 +15,12 @@ class SyncWalletCmd(
     var currency = -1
     var address = ""
     var pubKey = ""
+    var name = ""
 
     override fun serviceRequest(): Observable<SyncWalletResponse> {
         return api
                 .syncWallet(Constants.BASE_URL_WALLET, ServiceRequestFactory.getRequestData(
                         ServiceRequestFactory.REQUESTTYPE.SYNCWALLET,
-                        ServiceRequestFactory.getSyncWalletParams(address, pubKey, currency)))
+                        ServiceRequestFactory.getSyncWalletParams(address, pubKey, currency, name)))
     }
 }

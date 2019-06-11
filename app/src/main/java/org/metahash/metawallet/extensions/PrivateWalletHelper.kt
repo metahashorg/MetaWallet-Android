@@ -9,15 +9,21 @@ object PrivateWalletHelper {
     fun createWalletFromPrivateKey(password: String): Wallet? {
         val decryptedPrivateKey =
                 prepareKey(
-                        decryptPrivateKey(privateKeyInfo.toByteArray(Charsets.US_ASCII), password)
+                        decryptPrivateKey(privateKeyInfo.toByteArray(Charsets.US_ASCII), password) ?: ""
                 )
         if (decryptedPrivateKey.isEmpty()) {
             return null
         }
-        val wallet = CryptoExt.createWalletFromPrivateKey(
+        return CryptoExt.createWalletFromPrivateKey(
                 decryptedPrivateKey.toUpperCase().hexStringToByteArray()
         )
-        return wallet
+    }
+
+    fun encryptWalletPrivateKey(
+            privateKey: ByteArray,
+            password: String
+    ): String {
+        return encryptPrivateKey(privateKey, password) ?: ""
     }
 
     private fun prepareKey(key: String): String {
@@ -27,5 +33,10 @@ object PrivateWalletHelper {
     private external fun decryptPrivateKey(
             pemInfo: ByteArray,
             password: String
-    ): String
+    ): String?
+
+    private external fun encryptPrivateKey(
+            privateKey: ByteArray,
+            password: String
+    ): String?
 }
