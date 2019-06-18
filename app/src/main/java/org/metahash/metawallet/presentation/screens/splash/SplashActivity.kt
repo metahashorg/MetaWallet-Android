@@ -170,7 +170,7 @@ class SplashActivity : BaseActivity() {
                 //get only local parameter
                 { WalletApplication.dbHelper.isOnlyLocalWallets() },
                 //method to get private key
-                { address, password -> getPrivateKyByAddress(address, password) },
+                { address, password -> getPrivateKeyByAddress(address, password, true) },
                 //get app version
                 { BuildConfig.VERSION_NAME },
                 //start reading qr code
@@ -186,7 +186,8 @@ class SplashActivity : BaseActivity() {
                         fromUI({ webView.reload() }, 200)
                     })
                 },
-                { p, c, cc, n -> importPrivateWallet(p, c, cc, n) }
+                { p, c, cc, n -> importPrivateWallet(p, c, cc, n) },
+                { address, password -> getPrivateKeyByAddress(address, password, false) }
             ),
             Constants.JS_BRIDGE)
     }
@@ -337,7 +338,6 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
-        Log.d("MIINE", "getWallets: $currency")
         if (currency == Constants.TYPE_MHC.toString()) {
             mMHCWalletsDisposable.dispose()
         } else {
@@ -349,7 +349,6 @@ class SplashActivity : BaseActivity() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
-                    Log.d("MIINE", "getWallets response: $currency")
                     JsFunctionCaller.callFunction(
                         webView,
                         JsFunctionCaller.FUNCTION.WALLETSRESULT, it, currency
@@ -544,8 +543,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun startBalancesObserving() {
-        return
-        addSubscription(
+/*        addSubscription(
             WalletApplication.api.startBalanceObserving(Constants.TYPE_MHC)
                 .subscribe(
                     {
@@ -570,19 +568,32 @@ class SplashActivity : BaseActivity() {
                     {
                         it.printStackTrace()
                     }
-                ))
+                ))*/
     }
 
-    private fun getPrivateKyByAddress(address: String, password: String): String {
+    private fun getPrivateKeyByAddress(address: String, password: String, encrypted: Boolean): String {
         val wallet = WalletApplication.dbHelper.getUserWalletByAddress(
             address,
             WalletApplication.dbHelper.getLogin()
-        ) ?: return ""
-        if (wallet.password != password) {
-            return ""
+        )
+        return if (encrypted) {
+            val result = when {
+                wallet == null -> ""
+                wallet.password != password -> ""
+                else -> PrivateWalletHelper.encryptWalletPrivateKey(wallet.privateKeyPKCS1, password)
+            }
+            result
+        } else {
+            getPrivateKeyDecrypted(wallet, password)
         }
-        val data = PrivateWalletHelper.encryptWalletPrivateKey(wallet.privateKeyPKCS1, password)
-        return data
+    }
+
+    private fun getPrivateKeyDecrypted(wallet: Wallet?, password: String): String {
+        return when {
+            wallet == null -> JsResultHelper.getPrivateKeyDecryptedResult("", "NO_WALLET")
+            wallet.password != password -> JsResultHelper.getPrivateKeyDecryptedResult("", "ERROR_INCORRECT_PASSWORD")
+            else -> JsResultHelper.getPrivateKeyDecryptedResult(CryptoExt.publicKeyToHex(wallet.privateKeyPKCS1), "OK")
+        }
     }
 
     private fun importWalletByPrivateKey(key: String) {
@@ -623,9 +634,9 @@ class SplashActivity : BaseActivity() {
     private fun importPrivateWallet(
         password: String, currency: String,
         currencyCode: String, name: String
-    ) {
+    ): String {
         val privateWallet = PrivateWalletHelper.createWalletFromPrivateKey(password)
-        if (privateWallet != null) {
+        return if (privateWallet != null) {
             privateWallet.name = name
             privateWallet.currency = currency
             privateWallet.code = currencyCode
@@ -633,21 +644,9 @@ class SplashActivity : BaseActivity() {
             privateWallet.password = password
 
             saveOrUpdateWallet(privateWallet)
-
-            fromUI({
-                Log.d("MIINE", "imported, address: ${privateWallet.address}")
-                JsFunctionCaller.callFunction(
-                    webView,
-                    JsFunctionCaller.FUNCTION.IMPORTPRIVATERESULT, "OK", privateWallet.address
-                )
-            })
+            JsResultHelper.importPrivateWalletResult(privateWallet.address, "OK")
         } else {
-            fromUI({
-                JsFunctionCaller.callFunction(
-                    webView,
-                    JsFunctionCaller.FUNCTION.IMPORTPRIVATERESULT, "INCORRECT_KEY", ""
-                )
-            })
+            JsResultHelper.importPrivateWalletResult("", "INCORRECT_KEY")
         }
     }
 

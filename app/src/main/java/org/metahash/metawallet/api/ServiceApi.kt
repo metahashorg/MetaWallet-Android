@@ -1,8 +1,6 @@
 package org.metahash.metawallet.api
 
-import android.util.Base64
 import io.reactivex.Observable
-import io.reactivex.disposables.Disposable
 import io.reactivex.functions.Function3
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*

@@ -3,23 +3,25 @@ package org.metahash.metawallet.api.wvinterface
 import android.webkit.JavascriptInterface
 
 class JSBridge(
-        private val onAuth: (String, String) -> Unit,
-        private val onGetLogin: () -> String,
-        private val onGetWallets: (String) -> Unit,
-        private val onGetHistory: (String) -> Unit,
-        private val onGenerateAddress: (String, String, String, String) -> Unit,
-        private val onCreateTransaction: (String, String, String, String, String, String) -> Unit,
-        private val onCreateTransactionNew: (String, String, String, String, String, String, String) -> Unit,
-        private val onLogOut: () -> Unit,
-        private val onSignUp: (String, String) -> Unit,
-        private val setOnlyLocal: (Boolean) -> Unit,
-        private val getOnlyLocal: () -> Boolean,
-        private val onGetPrivateKey: (String, String) -> String,
-        private val onGetAppVersion: () -> String,
-        private val onStartQr: () -> Unit,
-        private val onImport: (String, String, String, String, String, String) -> Unit,
-        private val onClearCache: () -> Unit,
-        private val onImportPrivateWallet: (String, String, String, String) -> Unit) {
+    private val onAuth: (String, String) -> Unit,
+    private val onGetLogin: () -> String,
+    private val onGetWallets: (String) -> Unit,
+    private val onGetHistory: (String) -> Unit,
+    private val onGenerateAddress: (String, String, String, String) -> Unit,
+    private val onCreateTransaction: (String, String, String, String, String, String) -> Unit,
+    private val onCreateTransactionNew: (String, String, String, String, String, String, String) -> Unit,
+    private val onLogOut: () -> Unit,
+    private val onSignUp: (String, String) -> Unit,
+    private val setOnlyLocal: (Boolean) -> Unit,
+    private val getOnlyLocal: () -> Boolean,
+    private val onGetPrivateKey: (String, String) -> String,
+    private val onGetAppVersion: () -> String,
+    private val onStartQr: () -> Unit,
+    private val onImport: (String, String, String, String, String, String) -> Unit,
+    private val onClearCache: () -> Unit,
+    private val onImportPrivateWallet: (String, String, String, String) -> String,
+    private val onGetPrivateKeyDecrypted: (String, String) -> String
+) {
 
     //method to login
     @JavascriptInterface
@@ -47,14 +49,18 @@ class JSBridge(
     }
 
     @JavascriptInterface
-    fun sendTMHTx(from: String, password: String, to: String,
-                  amount: String, fee: String, data: String) {
+    fun sendTMHTx(
+        from: String, password: String, to: String,
+        amount: String, fee: String, data: String
+    ) {
         onCreateTransaction.invoke(from, password, to, amount, fee, data)
     }
 
     @JavascriptInterface
-    fun sendTx(from: String, password: String, to: String,
-               amount: String, fee: String, data: String, currency: String) {
+    fun sendTx(
+        from: String, password: String, to: String,
+        amount: String, fee: String, data: String, currency: String
+    ) {
         onCreateTransactionNew.invoke(from, password, to, amount, fee, data, currency)
     }
 
@@ -77,7 +83,16 @@ class JSBridge(
     fun getOnlyLocalAddresses(): Boolean = getOnlyLocal.invoke()
 
     @JavascriptInterface
-    fun getPrivateKey(address: String, password: String): String = onGetPrivateKey.invoke(address, password)
+    fun getPrivateKey(address: String, password: String): String {
+        return onGetPrivateKey.invoke(address, password)
+    }
+
+    @JavascriptInterface
+    fun getPrivateKeyDecrypted(
+        address: String,
+        currencyId: String,
+        password: String
+    ): String = onGetPrivateKeyDecrypted.invoke(address, password)
 
     @JavascriptInterface
     fun getAppVersion(): String = onGetAppVersion.invoke()
@@ -88,8 +103,10 @@ class JSBridge(
     }
 
     @JavascriptInterface
-    fun importWallet(address: String, privKey: String, password: String,
-                     currency: String, currency_code: String, name: String) {
+    fun importWallet(
+        address: String, privKey: String, password: String,
+        currency: String, currency_code: String, name: String
+    ) {
         onImport.invoke(address, privKey, password, currency, currency_code, name)
     }
 
@@ -99,7 +116,7 @@ class JSBridge(
     }
 
     @JavascriptInterface
-    fun importPrivateWallet(password: String, currency: String, currencyCode: String, name: String) {
-        onImportPrivateWallet.invoke(password, currency, currencyCode, name)
+    fun importPrivateWallet(password: String, currency: String, currencyCode: String, name: String): String {
+        return onImportPrivateWallet.invoke(password, currency, currencyCode, name)
     }
 }

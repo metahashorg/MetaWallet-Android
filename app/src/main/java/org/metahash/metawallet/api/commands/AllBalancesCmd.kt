@@ -11,8 +11,8 @@ import org.metahash.metawallet.data.models.WalletsData
 import java.util.concurrent.Executors
 
 class AllBalancesCmd(
-        private val allWalletsCmd: AllWalletsCmd,
-        private val balanceCmd: WalletBalanceCmd
+    private val allWalletsCmd: AllWalletsCmd,
+    private val balanceCmd: WalletBalanceCmd
 ) : BaseCommand<List<WalletsData>>() {
 
     private val executor = Executors.newFixedThreadPool(3)
@@ -24,17 +24,17 @@ class AllBalancesCmd(
     override fun serviceRequest(): Observable<List<WalletsData>> {
         allWalletsCmd.currency = currency
         return allWalletsCmd.execute()
-                .flatMap(
-                        { getBalancesRequest(it) },
-                        { wallets, balances ->
-                            wallets.forEach { wallet ->
-                                val balance = balances.firstOrNull { it.address == wallet.address }
-                                if (balance != null) {
-                                    wallet.balance = balance
-                                }
-                            }
-                            wallets
-                        })
+            .flatMap(
+                { getBalancesRequest(it) },
+                { wallets, balances ->
+                    wallets.forEach { wallet ->
+                        val balance = balances.firstOrNull { it.address == wallet.address }
+                        if (balance != null) {
+                            wallet.balance = balance
+                        }
+                    }
+                    wallets
+                })
     }
 
     private fun getBalancesRequest(addresses: List<WalletsData>): Observable<List<BalanceData>> {
@@ -60,27 +60,31 @@ class AllBalancesCmd(
     }
 
     fun executeWithCache() = execute()
-            .observeOn(Schedulers.computation())
-            .doOnNext {
-                if (it.isNotEmpty()) {
-                    WalletApplication.dbHelper.setWalletsData(it)
-                }
+        .observeOn(Schedulers.computation())
+        .doOnNext {
+            if (it.isNotEmpty()) {
+                WalletApplication.dbHelper.setWalletsData(it)
             }
-            .startWith(Observable.fromCallable {
-                WalletApplication.dbHelper.getWalletsDataByCurrency(currency.toString(),
-                    WalletApplication.dbHelper.getLogin())
-            }
-                    .subscribeOn(Schedulers.computation())
-                    .filter { it.isNotEmpty() }
+        }
+        .startWith(Observable.fromCallable {
+            WalletApplication.dbHelper.getWalletsDataByCurrency(
+                currency.toString(),
+                WalletApplication.dbHelper.getLogin()
             )
-            //filter by isLocalOnly variable
-            .map {
-                if (isOnlyLocal.not()) {
-                    it
-                } else {
-                    it.filter { it.hasPrivateKey }
-                }
+        }
+            .subscribeOn(Schedulers.computation())
+            .filter { it.isNotEmpty() }
+        )
+        //filter by isLocalOnly variable
+        .map {
+            if (isOnlyLocal.not()) {
+                it
+            } else {
+                it.filter { it.hasPrivateKey }
             }
-            .map { it.map { toSimpleWalletMapper.fromEntity(it) } }
-            .map { WalletApplication.gson.toJson(it) }
+        }
+        .map {
+            it.map { toSimpleWalletMapper.fromEntity(it) }
+        }
+        .map { WalletApplication.gson.toJson(it) }
 }
