@@ -23,7 +23,7 @@ data class BalanceData(
         get() = received - spent
 
     val delegatedBy: Double
-        get() = ((delegate ?: 0.0) - (undelegate ?: 0.0))/1000
+        get() = ((delegate ?: 0.0) - (undelegate ?: 0.0))/1000000
 
     constructor() : this(
         "", 0F, 0F,
