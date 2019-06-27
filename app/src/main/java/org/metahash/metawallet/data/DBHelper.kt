@@ -16,6 +16,7 @@ class DBHelper {
     private val KEY_ONLY_LOCAL_WALLETS = "key_only_local_wallets"
     private val KEY_USER_PINCODE = "key_user_pincode"
     private val KEY_LAST_ACTION_TIME = "key_last_action_time"
+    private val KEY_SAVED_LANGUAGE = "key_saved_language"
 
     fun clearAll() {
         Hawk.delete(KEY_TOKEN)
@@ -27,7 +28,7 @@ class DBHelper {
         Hawk.delete(KEY_ONLY_LOCAL_WALLETS)
     }
 
-    //PROXY AND TORRENT IP
+    //region PROXY AND TORRENT IP
     @Synchronized
     fun setProxy(proxy: List<Proxy>) {
         val data = Hawk.get<ProxyData>(KEY_PROXY_TORRENT, ProxyData())
@@ -95,8 +96,9 @@ class DBHelper {
     fun deleteProxyTorrent() {
         Hawk.delete(KEY_PROXY_TORRENT)
     }
+    //endregion
 
-    //TOKEN AND LOGIN
+    //region TOKEN AND LOGIN
     @Synchronized
     fun setToken(token: String) {
         Hawk.put(KEY_TOKEN, token)
@@ -152,10 +154,10 @@ class DBHelper {
                     it.userLogin == userLogin
         }
     }
+    //endregion
 
-    /**
-     * WALLETS HISTORY
-     */
+
+    //region WALLETS HISTORY
     @Synchronized
     private fun getAllWalletsHistory() = Hawk.get<MutableList<HistoryData>>(KEY_WALLET_HISTORY, mutableListOf())
 
@@ -180,10 +182,10 @@ class DBHelper {
                     it.userLogin == currentUserLogin
         }
     }
+    //endregion
 
-    /**
-     * USER WALLETS
-     */
+
+    //region USER WALLETS
     @Synchronized
     fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
@@ -205,14 +207,14 @@ class DBHelper {
     @Synchronized
     fun getUserWalletByAddress(address: String, userLogin: String): Wallet? {
         return getUserWallets()
-                .firstOrNull { it.address == address && it.userLogin == userLogin }
+            .firstOrNull { it.address == address && it.userLogin == userLogin }
     }
 
     @Synchronized
     fun getUserWalletsByCurrency(currency: String, userLogin: String): List<Wallet> {
         return getUserWallets()
-                .filter { it.currency.equals(currency, true) }
-                .filter { it.userLogin == userLogin }
+            .filter { it.currency.equals(currency, true) }
+            .filter { it.userLogin == userLogin }
     }
 
     @Synchronized
@@ -226,8 +228,8 @@ class DBHelper {
     fun getUnsynchonizedWallets(userLogin: String): List<Wallet> {
         val data = getUserWallets()
         return data
-                .filter { it.userLogin == userLogin }
-                .filter { it.isSynchronized.not() }
+            .filter { it.userLogin == userLogin }
+            .filter { it.isSynchronized.not() }
     }
 
     @Synchronized
@@ -238,9 +240,10 @@ class DBHelper {
     @Synchronized
     fun isOnlyLocalWallets() = Hawk.get<Boolean>(KEY_ONLY_LOCAL_WALLETS, false)
 
-    /**
-     * PINCODES
-     */
+    //endregion
+
+
+    //region PINCODES
     @Synchronized
     private fun getAllPincodes() = Hawk.get<MutableList<UserPincode>>(KEY_USER_PINCODE, mutableListOf())
 
@@ -299,4 +302,14 @@ class DBHelper {
         val wallet = getUserWalletByAddress(address, getLogin())
         return wallet?.currency?.toInt() ?: -1
     }
+    //endregion
+
+    //region LANGUAGE
+    fun getLanguage() = Hawk.get<String>(KEY_SAVED_LANGUAGE, "")
+
+    fun saveLanguage(language: String) {
+        Hawk.put(KEY_SAVED_LANGUAGE, language)
+    }
+    //endregion
+
 }

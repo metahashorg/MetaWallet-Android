@@ -20,7 +20,9 @@ class JSBridge(
     private val onImport: (String, String, String, String, String, String) -> Unit,
     private val onClearCache: () -> Unit,
     private val onImportPrivateWallet: (String, String, String, String) -> String,
-    private val onGetPrivateKeyDecrypted: (String, String) -> String
+    private val onGetPrivateKeyDecrypted: (String, String) -> String,
+    private val onGetSavedLanguage: () -> String,
+    private val onSaveLanguage: (String) -> Unit
 ) {
 
     //method to login
@@ -118,5 +120,13 @@ class JSBridge(
     @JavascriptInterface
     fun importPrivateWallet(password: String, currency: String, currencyCode: String, name: String): String {
         return onImportPrivateWallet.invoke(password, currency, currencyCode, name)
+    }
+
+    @JavascriptInterface
+    fun getLanguage(): String = onGetSavedLanguage()
+
+    @JavascriptInterface
+    fun setLanguage(language: String) {
+        onSaveLanguage(language)
     }
 }

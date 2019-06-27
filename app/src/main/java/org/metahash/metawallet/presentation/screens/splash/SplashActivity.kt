@@ -187,7 +187,9 @@ class SplashActivity : BaseActivity() {
                     })
                 },
                 { p, c, cc, n -> importPrivateWallet(p, c, cc, n) },
-                { address, password -> getPrivateKeyByAddress(address, password, false) }
+                { address, password -> getPrivateKeyByAddress(address, password, false) },
+                { WalletApplication.dbHelper.getLanguage() },
+                { saveLanguage(it) }
             ),
             Constants.JS_BRIDGE)
     }
@@ -207,6 +209,10 @@ class SplashActivity : BaseActivity() {
 
     private fun setOnlyLocal(onlyLocal: Boolean) {
         WalletApplication.dbHelper.setOnlyLocalWallets(onlyLocal)
+    }
+
+    private fun saveLanguage(language: String) {
+        WalletApplication.dbHelper.saveLanguage(language)
     }
 
     private fun login(login: String, password: String) {
