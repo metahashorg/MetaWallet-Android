@@ -20,6 +20,12 @@ interface Api {
     fun syncWallet(@Url url: String, @Body body: ServiceRequest): Observable<SyncWalletResponse>
 
     @POST
+    fun setWalletName(@Url url: String, @Body body: ServiceRequest): Observable<BaseResponse>
+
+    @POST
+    fun setWalletSync(@Url url: String, @Body body: ServiceRequest): Observable<BaseResponse>
+
+    @POST
     fun getUserWallets(@Url url: String, @Body body: ServiceRequest): Observable<WalletsResponse>
 
     @POST

@@ -25,6 +25,7 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
+import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
@@ -320,6 +321,8 @@ class SplashActivity : BaseActivity() {
                             checkUnsynchronizedWallets()
                             startBalancesObserving()
                             checkDeepLink()
+                            val w = WalletApplication.dbHelper.getUserWallets().first()
+                            deleteWalletFromLocal(w.address, w.password)
                         } else {
                             JsFunctionCaller.callFunction(
                                 webView,
@@ -637,6 +640,71 @@ class SplashActivity : BaseActivity() {
         }
     }
 
+    private fun renameWallet(
+        address: String,
+        newName: String,
+        password: String
+    ) {
+        val userWallet =
+            WalletApplication.dbHelper.getUserWalletByAddress(
+                address,
+                WalletApplication.dbHelper.getLogin()
+            )
+        if (userWallet != null) {
+            if (password == userWallet.password) {
+                userWallet.name = newName
+                WalletApplication.dbHelper.updateUserWallet(
+                    userWallet,
+                    WalletApplication.dbHelper.getLogin()
+                )
+                setWalletName(address, userWallet.currency.toInt(), newName)
+            }
+        }
+    }
+
+    private fun deleteWalletFromLocal(
+        address: String,
+        password: String
+    ) {
+        val userWallet =
+            WalletApplication.dbHelper.getUserWalletByAddress(
+                address,
+                WalletApplication.dbHelper.getLogin()
+            )
+        if (userWallet != null) {
+            if (password == userWallet.password) {
+                WalletApplication.dbHelper.deleteUserWalletByAddress(
+                    address,
+                    WalletApplication.dbHelper.getLogin()
+                )
+                setWalletSync(address, userWallet.currency.toInt(), false)
+            }
+        }
+    }
+
+    private fun setWalletSync(
+        address: String,
+        currency: Int,
+        sync: Boolean
+    ) {
+        addSubscription(WalletApplication.api.setWalletSync(
+            address, currency, sync
+        )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    if (it.isOk()) {
+
+                    }
+                },
+                {
+                    it.printStackTrace()
+                }
+            )
+        )
+    }
+
     private fun importPrivateWallet(
         password: String, currency: String,
         currencyCode: String, name: String
@@ -738,6 +806,29 @@ class SplashActivity : BaseActivity() {
                 )
             }
         }
+    }
+
+    private fun setWalletName(
+        address: String,
+        currency: Int,
+        walletName: String
+    ) {
+        addSubscription(WalletApplication.api.setWalletName(
+            address, currency, walletName
+        )
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    if (it.isOk()) {
+
+                    }
+                },
+                {
+                    it.printStackTrace()
+                }
+            )
+        )
     }
 
     override fun onBackPressed() {

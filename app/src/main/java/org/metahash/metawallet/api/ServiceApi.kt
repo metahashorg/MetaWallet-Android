@@ -61,6 +61,12 @@ class ServiceApi(private val api: Api) {
     private val pingProxyCmd by lazy {
         PingProxyAddressCmd(api)
     }
+    private val setWalletNameCmd by lazy {
+        SetWalletNameCmd(api)
+    }
+    private val setWalletSyncCmd by lazy {
+        SetWalletSyncCmd(api)
+    }
 
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login
@@ -209,6 +215,28 @@ class ServiceApi(private val api: Api) {
         syncWalletCmd.pubKey = pubKey
         syncWalletCmd.name = walletName.toBase64()
         return syncWalletCmd.execute()
+    }
+
+    fun setWalletName(
+        address: String,
+        currency: Int,
+        walletName: String
+    ): Observable<BaseResponse> {
+        setWalletNameCmd.address = address
+        setWalletNameCmd.currency = currency
+        setWalletNameCmd.name = walletName.toBase64()
+        return setWalletNameCmd.execute()
+    }
+
+    fun setWalletSync(
+        address: String,
+        currency: Int,
+        sync: Boolean
+    ): Observable<BaseResponse> {
+        setWalletSyncCmd.address = address
+        setWalletSyncCmd.currency = currency
+        setWalletSyncCmd.sync = sync
+        return setWalletSyncCmd.execute()
     }
 
     fun getTxParams(address: String, currency: Int) {

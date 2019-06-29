@@ -190,6 +190,24 @@ class DBHelper {
     fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
     @Synchronized
+    private fun setUserWallets(wallets: List<Wallet>) {
+        Hawk.put(KEY_USER_WALLETS, wallets)
+    }
+
+    @Synchronized
+    fun deleteUserWalletByAddress(
+        address: String,
+        userLogin: String
+    ) {
+        val allWallets = getUserWallets()
+        val index = allWallets.indexOfFirst { it.address == address && it.userLogin == userLogin }
+        if (index != -1) {
+            allWallets.removeAt(index)
+            setUserWallets(allWallets)
+        }
+    }
+
+    @Synchronized
     fun setUserWallet(wallet: Wallet) {
         val data = getUserWallets()
         data.add(wallet)

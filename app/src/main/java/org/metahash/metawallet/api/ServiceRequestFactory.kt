@@ -17,6 +17,8 @@ object ServiceRequestFactory {
     private const val METHOD_CREATE_TX = "mhc_send"
     private const val METHOD_TX_INFO = "get-tx"
     private const val METHOD_SYNC_WALLET = "address.create"
+    private const val METHOD_SET_WALLET_NAME = "address.name.set"
+    private const val METHOD_SET_WALLET_SYNC = "address.setSync"
     private const val METHOD_TX_PARAMS = "transaction.params"
     private const val METHOD_PROXY_INFO = "getinfo"
     private const val METHOD_TORRENT_INFO = "get-count-blocks"
@@ -35,6 +37,7 @@ object ServiceRequestFactory {
     private const val KEY_SIGN = "sign"
     private const val KEY_HASH = "hash"
     private const val KEY_NAME = "name"
+    private const val KEY_FLAG = "flag"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -50,6 +53,8 @@ object ServiceRequestFactory {
             REQUESTTYPE.TXPARAMS -> createTxParamsRequest(params!!)
             REQUESTTYPE.PINGPROXY -> createPingProxyParamsRequest()
             REQUESTTYPE.PINGTORRENT -> createPingTorrentParamsRequest()
+            REQUESTTYPE.SETWALLETNAME -> createSetWalletNameRequest(params!!)
+            REQUESTTYPE.SETWALLETSYNC -> createSetWalletSyncRequest(params!!)
         }
     }
 
@@ -122,6 +127,26 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getSetWalletNameParams(address: String, currency: Int, name: String): JsonArray {
+        return JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty(KEY_CURRENCY, currency)
+                addProperty(KEY_ADDRESS, address)
+                addProperty(KEY_NAME, name)
+            })
+        }
+    }
+
+    fun getSetWalletSyncParams(address: String, currency: Int, sync: Boolean): JsonArray {
+        return JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty(KEY_CURRENCY, currency)
+                addProperty(KEY_ADDRESS, address)
+                addProperty(KEY_FLAG, sync)
+            })
+        }
+    }
+
     fun getTxParamsParams(address: String, currency: Int): JsonArray {
         return JsonArray().apply {
             add(JsonObject().apply {
@@ -182,6 +207,20 @@ object ServiceRequestFactory {
             uid = WalletApplication.deviceId
     )
 
+    private fun createSetWalletNameRequest(params: Any) = ServiceRequest(
+            method = METHOD_SET_WALLET_NAME,
+            params = params,
+            token = WalletApplication.dbHelper.getToken(),
+            uid = WalletApplication.deviceId
+    )
+
+    private fun createSetWalletSyncRequest(params: Any) = ServiceRequest(
+            method = METHOD_SET_WALLET_SYNC,
+            params = params,
+            token = WalletApplication.dbHelper.getToken(),
+            uid = WalletApplication.deviceId
+    )
+
     private fun createTxParamsRequest(params: Any) = ServiceRequest(
             method = METHOD_TX_PARAMS,
             params = params
@@ -203,6 +242,8 @@ object ServiceRequestFactory {
         SYNCWALLET,
         TXPARAMS,
         PINGPROXY,
-        PINGTORRENT
+        PINGTORRENT,
+        SETWALLETNAME,
+        SETWALLETSYNC
     }
 }
