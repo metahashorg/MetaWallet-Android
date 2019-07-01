@@ -52,6 +52,8 @@ object JsFunctionCaller {
         SAVEIMPORTEDWALLET("saveImportedWallet"),
         UPDATERESOLVING("updateConnectingStatus"),
         IMPORTRESULT("importWalletResult"),
-        IMPORTPRIVATERESULT("importPrivateWalletResult")
+        IMPORTPRIVATERESULT("importPrivateWalletResult"),
+        RENAMERESULT("renameWalletResult"),
+        DELETERESULT("deleteWalletResult")
     }
 }

@@ -190,7 +190,9 @@ class SplashActivity : BaseActivity() {
                 { p, c, cc, n -> importPrivateWallet(p, c, cc, n) },
                 { address, password -> getPrivateKeyByAddress(address, password, false) },
                 { WalletApplication.dbHelper.getLanguage() },
-                { saveLanguage(it) }
+                { saveLanguage(it) },
+                { a, n, _ -> renameWallet(a, n) },
+                { a, _ -> deleteWalletFromLocal(a) }
             ),
             Constants.JS_BRIDGE)
     }
@@ -321,8 +323,6 @@ class SplashActivity : BaseActivity() {
                             checkUnsynchronizedWallets()
                             startBalancesObserving()
                             checkDeepLink()
-                            val w = WalletApplication.dbHelper.getUserWallets().first()
-                            deleteWalletFromLocal(w.address, w.password)
                         } else {
                             JsFunctionCaller.callFunction(
                                 webView,
@@ -642,8 +642,7 @@ class SplashActivity : BaseActivity() {
 
     private fun renameWallet(
         address: String,
-        newName: String,
-        password: String
+        newName: String
     ) {
         val userWallet =
             WalletApplication.dbHelper.getUserWalletByAddress(
@@ -651,20 +650,18 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.dbHelper.getLogin()
             )
         if (userWallet != null) {
-            if (password == userWallet.password) {
-                userWallet.name = newName
-                WalletApplication.dbHelper.updateUserWallet(
-                    userWallet,
-                    WalletApplication.dbHelper.getLogin()
-                )
-                setWalletName(address, userWallet.currency.toInt(), newName)
-            }
+            setWalletName(userWallet, newName)
+        } else {
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.RENAMERESULT,
+                "No such wallet"
+            )
         }
     }
 
     private fun deleteWalletFromLocal(
-        address: String,
-        password: String
+        address: String
     ) {
         val userWallet =
             WalletApplication.dbHelper.getUserWalletByAddress(
@@ -672,34 +669,53 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.dbHelper.getLogin()
             )
         if (userWallet != null) {
-            if (password == userWallet.password) {
-                WalletApplication.dbHelper.deleteUserWalletByAddress(
-                    address,
-                    WalletApplication.dbHelper.getLogin()
-                )
-                setWalletSync(address, userWallet.currency.toInt(), false)
-            }
+            setWalletSync(userWallet, false)
+        } else {
+            JsFunctionCaller.callFunction(
+                webView,
+                JsFunctionCaller.FUNCTION.DELETERESULT,
+                "No such wallet"
+            )
         }
     }
 
     private fun setWalletSync(
-        address: String,
-        currency: Int,
+        wallet: Wallet,
         sync: Boolean
     ) {
         addSubscription(WalletApplication.api.setWalletSync(
-            address, currency, sync
+            wallet.address, wallet.currency.toInt(), sync
         )
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
                     if (it.isOk()) {
-
+                        if (!sync) {
+                            WalletApplication.dbHelper.deleteUserWalletByAddress(
+                                wallet.address,
+                                WalletApplication.dbHelper.getLogin()
+                            )
+                        }
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.DELETERESULT,
+                            "OK"
+                        )
+                    } else {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.DELETERESULT,
+                            "Network error"
+                        )
                     }
                 },
                 {
-                    it.printStackTrace()
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.DELETERESULT,
+                        "Network error"
+                    )
                 }
             )
         )
@@ -809,23 +825,41 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun setWalletName(
-        address: String,
-        currency: Int,
-        walletName: String
+        wallet: Wallet,
+        newName: String
     ) {
         addSubscription(WalletApplication.api.setWalletName(
-            address, currency, walletName
+            wallet.address, wallet.currency.toInt(), newName
         )
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
                     if (it.isOk()) {
-
+                        wallet.name = newName
+                        WalletApplication.dbHelper.updateUserWallet(
+                            wallet,
+                            WalletApplication.dbHelper.getLogin()
+                        )
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.RENAMERESULT,
+                            "OK"
+                        )
+                    } else {
+                        JsFunctionCaller.callFunction(
+                            webView,
+                            JsFunctionCaller.FUNCTION.RENAMERESULT,
+                            "Network error"
+                        )
                     }
                 },
                 {
-                    it.printStackTrace()
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.RENAMERESULT,
+                        "Network error"
+                    )
                 }
             )
         )

@@ -187,7 +187,7 @@ class DBHelper {
 
     //region USER WALLETS
     @Synchronized
-    fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
+    private fun getUserWallets() = Hawk.get<MutableList<Wallet>>(KEY_USER_WALLETS, mutableListOf())
 
     @Synchronized
     private fun setUserWallets(wallets: List<Wallet>) {
@@ -211,7 +211,7 @@ class DBHelper {
     fun setUserWallet(wallet: Wallet) {
         val data = getUserWallets()
         data.add(wallet)
-        Hawk.put(KEY_USER_WALLETS, data)
+        setUserWallets(data)
     }
 
     @Synchronized
@@ -219,7 +219,7 @@ class DBHelper {
         val data = getUserWallets()
         data.removeAll { it.address == wallet.address && it.userLogin == userLogin }
         data.add(wallet)
-        Hawk.put(KEY_USER_WALLETS, data)
+        setUserWallets(data)
     }
 
     @Synchronized
@@ -323,7 +323,7 @@ class DBHelper {
     //endregion
 
     //region LANGUAGE
-    fun getLanguage() = Hawk.get<String>(KEY_SAVED_LANGUAGE, "")
+    fun getLanguage(): String = Hawk.get<String>(KEY_SAVED_LANGUAGE, "")
 
     fun saveLanguage(language: String) {
         Hawk.put(KEY_SAVED_LANGUAGE, language)
