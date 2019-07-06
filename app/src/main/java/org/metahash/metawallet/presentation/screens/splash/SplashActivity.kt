@@ -455,7 +455,6 @@ class SplashActivity : BaseActivity() {
                     )
                 })
                 val string = WalletApplication.gson.toJson(tx)
-                Log.d("MIINE", "tx: $string")
                 WalletApplication.api.createTransaction(tx, wallet.currency.toInt())
             }
             .observeOn(AndroidSchedulers.mainThread())
