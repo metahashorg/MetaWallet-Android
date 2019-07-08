@@ -235,6 +235,12 @@ class DBHelper {
     }
 
     @Synchronized
+    fun getUserWalletByLogin(userLogin: String): List<Wallet> {
+        return getUserWallets()
+            .filter { it.userLogin == userLogin }
+    }
+
+    @Synchronized
     fun getUserWalletsByCurrency(currency: String, userLogin: String): List<Wallet> {
         return getUserWallets()
             .filter { it.currency.equals(currency, true) }

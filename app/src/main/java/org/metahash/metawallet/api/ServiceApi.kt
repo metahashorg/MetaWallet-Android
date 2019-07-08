@@ -67,6 +67,11 @@ class ServiceApi(private val api: Api) {
     private val setWalletSyncCmd by lazy {
         SetWalletSyncCmd(api)
     }
+    private val migrationCmd by lazy {
+        MigrationCmd()
+    }
+
+    fun runMigration(): Observable<Unit> = migrationCmd.execute()
 
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login

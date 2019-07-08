@@ -25,6 +25,7 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
+import org.metahash.metawallet.api.PrivateWalletFileHelper
 import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.*
@@ -35,6 +36,8 @@ import org.metahash.metawallet.presentation.base.deeplink.linkbuilder.Transactio
 import org.metahash.metawallet.presentation.base.deeplink.queryparams.TransactionParams
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
 import org.metahash.metawallet.presentation.views.TouchWebView
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 class SplashActivity : BaseActivity() {
@@ -74,6 +77,24 @@ class SplashActivity : BaseActivity() {
                 WalletApplication.api.getTxParams(address, 3)
             }
         }*/
+    }
+
+    private fun test(): CompletableFutureCompat<String> {
+        val f = CompletableFutureCompat<String>()
+
+        addSubscription(Observable.timer(3, TimeUnit.SECONDS)
+            .map { "lolka" }
+            .subscribeOn(Schedulers.io())
+            .subscribe(
+                {
+                    f.complete(it)
+                },
+                {
+                    f.completeExceptionally(it)
+                }
+            )
+        )
+        return f
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -192,7 +213,8 @@ class SplashActivity : BaseActivity() {
                 { WalletApplication.dbHelper.getLanguage() },
                 { saveLanguage(it) },
                 { a, n, _ -> renameWallet(a, n) },
-                { a, _ -> deleteWalletFromLocal(a) }
+                { a, _ -> deleteWalletFromLocal(a) },
+                { test() }
             ),
             Constants.JS_BRIDGE)
     }
@@ -237,6 +259,7 @@ class SplashActivity : BaseActivity() {
                         )
                         checkUnsynchronizedWallets()
                         startBalancesObserving()
+                        migrate()
                     }
                 },
                 {
@@ -323,6 +346,7 @@ class SplashActivity : BaseActivity() {
                             checkUnsynchronizedWallets()
                             startBalancesObserving()
                             checkDeepLink()
+                            migrate()
                         } else {
                             JsFunctionCaller.callFunction(
                                 webView,
@@ -344,6 +368,15 @@ class SplashActivity : BaseActivity() {
                 JsFunctionCaller.FUNCTION.ONIPREADY, false
             )
         }
+    }
+
+    private fun migrate() {
+        addSubscription(WalletApplication.api.runMigration()
+            .subscribe(
+                {},
+                {}
+            )
+        )
     }
 
     private fun getWallets(currency: String) {
@@ -405,6 +438,7 @@ class SplashActivity : BaseActivity() {
             wallet.password = password
             //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
+            PrivateWalletFileHelper.saveWalletToFile(wallet)
             //sync wallet
             syncWallet(
                 wallet.address,
@@ -632,6 +666,7 @@ class SplashActivity : BaseActivity() {
             wallet.password = password
 
             saveOrUpdateWallet(wallet)
+            PrivateWalletFileHelper.saveWalletToFile(wallet)
 
             fromUI({
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.IMPORTRESULT, wallet.address)
@@ -733,6 +768,8 @@ class SplashActivity : BaseActivity() {
             privateWallet.password = password
 
             saveOrUpdateWallet(privateWallet)
+            PrivateWalletFileHelper.saveWalletToFile(privateWallet)
+
             JsResultHelper.importPrivateWalletResult(privateWallet.address, "OK")
         } else {
             JsResultHelper.importPrivateWalletResult("", "INCORRECT_KEY")
