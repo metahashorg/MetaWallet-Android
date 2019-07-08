@@ -205,6 +205,12 @@ class DBHelper {
             allWallets.removeAt(index)
             setUserWallets(allWallets)
         }
+        val walletsData = getAllWalletsData()
+        val walletDataIndex = walletsData.indexOfFirst { it.address == address && it.userLogin == userLogin }
+        if (walletDataIndex != -1) {
+            walletsData.removeAt(walletDataIndex)
+            Hawk.put(KEY_WALLETS, walletsData)
+        }
     }
 
     @Synchronized
