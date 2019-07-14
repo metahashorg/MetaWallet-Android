@@ -1,8 +1,6 @@
 package org.metahash.metawallet.api.wvinterface
 
-import android.util.Log
 import android.webkit.JavascriptInterface
-import org.metahash.metawallet.extensions.CompletableFutureCompat
 
 class JSBridge(
     private val onAuth: (String, String) -> Unit,
@@ -26,8 +24,7 @@ class JSBridge(
     private val onGetSavedLanguage: () -> String,
     private val onSaveLanguage: (String) -> Unit,
     private val onRenameWallet: (String, String, String) -> Unit,
-    private val onDeleteWallet: (String, String) -> Unit,
-    private val test: (String) -> CompletableFutureCompat<String>
+    private val onDeleteWallet: (String, String) -> Unit
 ) {
 
     //method to login
@@ -143,11 +140,5 @@ class JSBridge(
     @JavascriptInterface
     fun deleteWallet(address: String, currency: String) {
         onDeleteWallet(address, currency)
-    }
-
-    @JavascriptInterface
-    fun test(): CompletableFutureCompat<String> {
-        Log.d("MIINE", "test")
-        return test("test")
     }
 }

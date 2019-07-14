@@ -1,7 +1,6 @@
 package org.metahash.metawallet.api
 
-import android.content.Context
-import org.metahash.metawallet.WalletApplication
+import android.os.Environment
 import org.metahash.metawallet.data.models.Wallet
 import org.metahash.metawallet.extensions.PrivateWalletHelper
 import java.io.File
@@ -10,45 +9,70 @@ class PrivateWalletFileHelper {
 
     companion object {
 
+        private const val ROOT_FOLDER_NAME = "org.metahash.metawallet"
+        private const val WALLETS_FOLDER_NAME = "metawallet"
+
         private const val WALLET_FILE_POSTFIX = ".ec"
         private const val WALLET_FILE_EXTENSION = ".priv"
 
-        fun isWalletHasFile(wallet: Wallet): Boolean = getWalletFile(wallet.address).exists()
+        fun isWalletHasFile(wallet: Wallet): Boolean = getWalletFile(wallet).exists()
 
         fun saveWalletToFile(wallet: Wallet) {
             val encryptedPrivateKey = PrivateWalletHelper
                 .encryptWalletPrivateKey(wallet.privateKeyPKCS1, wallet.password)
             if (encryptedPrivateKey.isNotEmpty()) {
-                deleteWalletFileIfExist(wallet.address)
-                val fileName = createFileName(wallet.address)
-                WalletApplication.appContext.openFileOutput(fileName, Context.MODE_PRIVATE).use {
-                    it.write(encryptedPrivateKey.toByteArray(Charsets.UTF_8))
-                }
+                deleteWalletFileIfExist(wallet)
+                val file = createWalletFile(wallet)
+                file.writeText(
+                    encryptedPrivateKey,
+                    Charsets.UTF_8
+                )
             }
         }
 
         fun readWalletFile(wallet: Wallet) {
-            val fileName = createFileName(wallet.address)
-            val file = getWalletFile(wallet.address)
+            val file = getWalletFile(wallet)
             if (file.exists()) {
                 val data = file.readText(Charsets.UTF_8)
                 data.length
             }
         }
 
-        private fun deleteWalletFileIfExist(address: String) {
-            val file = getWalletFile(address)
+        private fun deleteWalletFileIfExist(wallet: Wallet) {
+            val file = getWalletFile(wallet)
             if (file.exists()) {
                 file.delete()
             }
         }
 
-        private fun getWalletFile(address: String): File {
-            return File(WalletApplication.appContext.filesDir, createFileName(address))
+        private fun createWalletFile(wallet: Wallet): File {
+            return getWalletFile(wallet).apply {
+                createNewFile()
+            }
         }
 
-        private fun createFileName(address: String): String {
-            return "$address$WALLET_FILE_POSTFIX$WALLET_FILE_EXTENSION"
+        private fun getWalletFile(wallet: Wallet): File {
+            val userFolder = getUserFolder(wallet.userLogin)
+            val walletAddress = wallet.address
+            return File(userFolder, "$walletAddress$WALLET_FILE_POSTFIX$WALLET_FILE_EXTENSION")
+        }
+
+        private fun getUserFolder(userName: String): File {
+            val parentFolder = getRootFolder()
+            return File(parentFolder, userName).apply {
+                if (!exists()) {
+                    mkdir()
+                }
+            }
+        }
+        private fun getRootFolder(): File {
+            val externalRoot = Environment.getExternalStorageDirectory()
+            val mainFolder = File(externalRoot, ROOT_FOLDER_NAME)
+            return File(mainFolder, WALLETS_FOLDER_NAME).apply {
+                if (!exists()) {
+                    mkdirs()
+                }
+            }
         }
     }
 }

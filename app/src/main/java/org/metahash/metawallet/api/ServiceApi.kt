@@ -1,5 +1,6 @@
 package org.metahash.metawallet.api
 
+import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.functions.Function3
 import org.metahash.metawallet.WalletApplication
@@ -71,7 +72,7 @@ class ServiceApi(private val api: Api) {
         MigrationCmd()
     }
 
-    fun runMigration(): Observable<Unit> = migrationCmd.execute()
+    fun runMigration(): Completable = migrationCmd.execute()
 
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login

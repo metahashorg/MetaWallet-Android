@@ -5,6 +5,12 @@
     <string name="loading_error">Connection failure</string>
     <string name="check_network_error">Check your internet connection</string>
 
+    <!--permissions alert dialog-->
+    <string name="alert_permissions_title">Storing private keys</string>
+    <string name="alert_permissions_message">We need your permission to store your private keys on this device</string>
+    <string name="alert_permissions_ok">Allow</string>
+    <string name="alert_permissions_cancel">Do not allow</string>
+
     <!--errors-->
     <string name="error_invalid_private_key">QR_INVALID</string>
     <string name="error_encrypted_private_key">QR_ENCRYPTED</string>

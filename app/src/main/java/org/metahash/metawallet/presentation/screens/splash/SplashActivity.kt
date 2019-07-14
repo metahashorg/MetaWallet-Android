@@ -15,7 +15,6 @@ import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposables
 import io.reactivex.observers.DisposableObserver
@@ -25,8 +24,6 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
-import org.metahash.metawallet.api.PrivateWalletFileHelper
-import org.metahash.metawallet.api.ServiceApi
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
@@ -35,16 +32,16 @@ import org.metahash.metawallet.presentation.base.deeplink.DeepLinkResolver
 import org.metahash.metawallet.presentation.base.deeplink.linkbuilder.TransactionLinkBuilder
 import org.metahash.metawallet.presentation.base.deeplink.queryparams.TransactionParams
 import org.metahash.metawallet.presentation.screens.qrreader.QrReaderActivity
+import org.metahash.metawallet.presentation.screens.splash.storage_permission.StoragePermissionDialog
 import org.metahash.metawallet.presentation.views.TouchWebView
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
 
 class SplashActivity : BaseActivity() {
 
     private val MAX_INFO_TRY_COUNT = 5L
     private val REQUEST_READ_KEY = 112
     private val REQUEST_CAMERA_PERM = 113
+    private val REQUEST_STORAGE_PERM_MIGRATION = 114
+    private val REQUEST_STORAGE_PERM_CREATE_WALLET = 115
 
     private val webView by bind<TouchWebView>(R.id.wv)
     private val vLoading by bind<View>(R.id.vLoading)
@@ -59,6 +56,7 @@ class SplashActivity : BaseActivity() {
         setContentView(R.layout.activity_splash)
         showLoadingOrError()
         initWebView()
+        //webView.loadUrl("file:///android_asset/index.html")
         webView.loadUrl(Constants.WEB_URL)
         fromUI({
             //if need to update - delete proxy and torrent, then ping
@@ -79,28 +77,89 @@ class SplashActivity : BaseActivity() {
         }*/
     }
 
-    private fun test(): CompletableFutureCompat<String> {
-        val f = CompletableFutureCompat<String>()
-
-        addSubscription(Observable.timer(3, TimeUnit.SECONDS)
-            .map { "lolka" }
-            .subscribeOn(Schedulers.io())
-            .subscribe(
-                {
-                    f.complete(it)
-                },
-                {
-                    f.completeExceptionally(it)
-                }
-            )
-        )
-        return f
-    }
-
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
         checkDeepLink()
+    }
+
+    override fun onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_CAMERA_PERM -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openQrScanner()
+                }
+            }
+            REQUEST_STORAGE_PERM_MIGRATION -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    migrateWalletsToLocalFiles()
+                }
+            }
+            REQUEST_STORAGE_PERM_CREATE_WALLET -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //to do create wallet file
+                    migrateWalletsToLocalFiles()
+                }
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == REQUEST_READ_KEY) {
+                val resultData = data?.getStringExtra("data") ?: ""
+                processQRReaderResult(resultData)
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    private fun askStoragePermissions(
+        requestCode: Int
+    ) {
+        if (shouldShowRequestPermissionRationale(
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            )
+        ) {
+            StoragePermissionDialog().apply {
+                onAllowClickListener = {
+                    this@SplashActivity.requestPermissions(
+                        arrayOf(
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ),
+                        requestCode
+                    )
+                }
+            }.show(supportFragmentManager, StoragePermissionDialog.TAG)
+        } else {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                requestCode
+            )
+        }
+    }
+
+    private fun isStoragePermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true
+        } else {
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+        }
     }
 
     private fun setActionListener() {
@@ -137,25 +196,6 @@ class SplashActivity : BaseActivity() {
                 arrayOf(Manifest.permission.CAMERA),
                 REQUEST_CAMERA_PERM
             )
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERM) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                openQrScanner()
-            }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == REQUEST_READ_KEY) {
-                val resultData = data?.getStringExtra("data") ?: ""
-                processQRReaderResult(resultData)
-            }
         }
     }
 
@@ -213,8 +253,7 @@ class SplashActivity : BaseActivity() {
                 { WalletApplication.dbHelper.getLanguage() },
                 { saveLanguage(it) },
                 { a, n, _ -> renameWallet(a, n) },
-                { a, _ -> deleteWalletFromLocal(a) },
-                { test() }
+                { a, _ -> deleteWalletFromLocal(a) }
             ),
             Constants.JS_BRIDGE)
     }
@@ -259,7 +298,7 @@ class SplashActivity : BaseActivity() {
                         )
                         checkUnsynchronizedWallets()
                         startBalancesObserving()
-                        migrate()
+                        migrateWalletsToLocalFiles()
                     }
                 },
                 {
@@ -346,7 +385,7 @@ class SplashActivity : BaseActivity() {
                             checkUnsynchronizedWallets()
                             startBalancesObserving()
                             checkDeepLink()
-                            migrate()
+                            migrateWalletsToLocalFiles()
                         } else {
                             JsFunctionCaller.callFunction(
                                 webView,
@@ -370,13 +409,21 @@ class SplashActivity : BaseActivity() {
         }
     }
 
-    private fun migrate() {
-        addSubscription(WalletApplication.api.runMigration()
-            .subscribe(
-                {},
-                {}
+    private fun migrateWalletsToLocalFiles() {
+        if (isStoragePermissionGranted()) {
+            addSubscription(WalletApplication.api.runMigration()
+                .subscribe(
+                    {
+                        Log.d("MIINE", "wallets migrated")
+                    },
+                    {
+                        Log.d("MIINE", "wallets migration error: ${it.message}")
+                    }
+                )
             )
-        )
+        } else {
+            askStoragePermissions(REQUEST_STORAGE_PERM_MIGRATION)
+        }
     }
 
     private fun getWallets(currency: String) {
@@ -428,6 +475,14 @@ class SplashActivity : BaseActivity() {
             ))
     }
 
+    private fun createWalletLocalFile() {
+        if (isStoragePermissionGranted()) {
+            migrateWalletsToLocalFiles()
+        } else {
+            askStoragePermissions(REQUEST_STORAGE_PERM_CREATE_WALLET)
+        }
+    }
+
     private fun createNewAddress(name: String, password: String, currency: String, code: String) {
         val wallet = CryptoExt.createWallet()
         if (wallet != null) {
@@ -438,7 +493,7 @@ class SplashActivity : BaseActivity() {
             wallet.password = password
             //save wallet
             WalletApplication.dbHelper.setUserWallet(wallet)
-            PrivateWalletFileHelper.saveWalletToFile(wallet)
+            createWalletLocalFile()
             //sync wallet
             syncWallet(
                 wallet.address,
@@ -666,7 +721,7 @@ class SplashActivity : BaseActivity() {
             wallet.password = password
 
             saveOrUpdateWallet(wallet)
-            PrivateWalletFileHelper.saveWalletToFile(wallet)
+            createWalletLocalFile()
 
             fromUI({
                 JsFunctionCaller.callFunction(webView, JsFunctionCaller.FUNCTION.IMPORTRESULT, wallet.address)
@@ -768,7 +823,7 @@ class SplashActivity : BaseActivity() {
             privateWallet.password = password
 
             saveOrUpdateWallet(privateWallet)
-            PrivateWalletFileHelper.saveWalletToFile(privateWallet)
+            createWalletLocalFile()
 
             JsResultHelper.importPrivateWalletResult(privateWallet.address, "OK")
         } else {
@@ -899,14 +954,6 @@ class SplashActivity : BaseActivity() {
                 }
             )
         )
-    }
-
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
     }
 
     private inner class ChromeClient : WebViewClient() {
