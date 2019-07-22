@@ -54,4 +54,10 @@ interface Api {
     @POST
     fun pingTorrentAddress(@Url url: String, @Body body: ServiceRequest): Observable<Response<ResponseBody>>
 
+    @POST
+    fun getNodesList(@Url url: String, @Body body: ServiceRequest): Observable<GetNodesListResponse>
+
+    @POST
+    fun getNodeInfo(@Url url: String, @Body body: ServiceRequest): Observable<GetNodeInfoResponse>
+
 }

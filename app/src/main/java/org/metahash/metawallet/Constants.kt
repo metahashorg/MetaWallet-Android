@@ -19,6 +19,9 @@ object Constants {
     //for wallet operations
     const val BASE_URL_WALLET = "https://wallet.metahash.org/api/"
 
+    //for nodes requests
+    const val BASE_NODES_URL = "http://netregistry.metahash.io/api/"
+
     const val JS_BRIDGE = "androidJsBridge"
 
     const val TORRENT_PORT = "5795"

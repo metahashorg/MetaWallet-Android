@@ -11,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
@@ -24,6 +23,7 @@ import org.metahash.metawallet.Constants
 import org.metahash.metawallet.R
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.JsFunctionCaller
+import org.metahash.metawallet.api.JsResultHelper
 import org.metahash.metawallet.api.wvinterface.JSBridge
 import org.metahash.metawallet.data.models.*
 import org.metahash.metawallet.extensions.*
@@ -253,7 +253,9 @@ class SplashActivity : BaseActivity() {
                 { WalletApplication.dbHelper.getLanguage() },
                 { saveLanguage(it) },
                 { a, n, _ -> renameWallet(a, n) },
-                { a, _ -> deleteWalletFromLocal(a) }
+                { a, _ -> deleteWalletFromLocal(a) },
+                { getNodesList() }, //getNodesListResult
+                { getNodeInfo(it) } //getNodeInfoResult
             ),
             Constants.JS_BRIDGE)
     }
@@ -409,16 +411,40 @@ class SplashActivity : BaseActivity() {
         }
     }
 
+    private fun getNodesList() {
+        addSubscription(WalletApplication.api.getNodesList()
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    //send result here
+                },
+                {
+                    it.printStackTrace()
+                }
+            )
+        )
+    }
+
+    private fun getNodeInfo(address: String) {
+        addSubscription(WalletApplication.api.getNodeInfo(address)
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                {
+                    //send result here
+                },
+                {
+                    it.printStackTrace()
+                }
+            )
+        )
+    }
+
     private fun migrateWalletsToLocalFiles() {
         if (isStoragePermissionGranted()) {
             addSubscription(WalletApplication.api.runMigration()
                 .subscribe(
-                    {
-                        Log.d("MIINE", "wallets migrated")
-                    },
-                    {
-                        Log.d("MIINE", "wallets migration error: ${it.message}")
-                    }
+                    {},
+                    {}
                 )
             )
         } else {
@@ -427,6 +453,7 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
+        return
         if (currency == Constants.TYPE_MHC.toString()) {
             mMHCWalletsDisposable.dispose()
         } else {

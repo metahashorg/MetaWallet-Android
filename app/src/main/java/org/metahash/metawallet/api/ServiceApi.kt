@@ -3,6 +3,7 @@ package org.metahash.metawallet.api
 import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.functions.Function3
+import io.reactivex.schedulers.Schedulers
 import org.metahash.metawallet.WalletApplication
 import org.metahash.metawallet.api.commands.*
 import org.metahash.metawallet.data.ProxyTorrentResolver
@@ -71,8 +72,27 @@ class ServiceApi(private val api: Api) {
     private val migrationCmd by lazy {
         MigrationCmd()
     }
+    private val nodeListCmd by lazy {
+        GetNodesListCmd(api)
+    }
+    private val nodeInfoCmd by lazy {
+        GetNodeInfoCmd(api)
+    }
 
     fun runMigration(): Completable = migrationCmd.execute()
+
+    fun getNodesList(): Observable<String> {
+        return nodeListCmd.execute()
+            .observeOn(Schedulers.io())
+            .map { JsResultHelper.nodesListResult(it.data, "OK") }
+    }
+
+    fun getNodeInfo(address: String): Observable<String> {
+        nodeInfoCmd.address = address
+        return nodeInfoCmd.execute()
+            .observeOn(Schedulers.io())
+            .map { JsResultHelper.nodesInfoResult(it.data, "OK") }
+    }
 
     fun login(login: String, password: String): Observable<LoginResponse> {
         loginCmd.login = login

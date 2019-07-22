@@ -24,7 +24,9 @@ class JSBridge(
     private val onGetSavedLanguage: () -> String,
     private val onSaveLanguage: (String) -> Unit,
     private val onRenameWallet: (String, String, String) -> Unit,
-    private val onDeleteWallet: (String, String) -> Unit
+    private val onDeleteWallet: (String, String) -> Unit,
+    private val onGetNodes: () -> Unit,
+    private val onGetNodeInfo: (String) -> Unit
 ) {
 
     //method to login
@@ -140,5 +142,15 @@ class JSBridge(
     @JavascriptInterface
     fun deleteWallet(address: String, currency: String) {
         onDeleteWallet(address, currency)
+    }
+
+    @JavascriptInterface
+    fun getNodesList() {
+        onGetNodes()
+    }
+
+    @JavascriptInterface
+    fun getNodeInfo(address: String) {
+        onGetNodeInfo(address)
     }
 }

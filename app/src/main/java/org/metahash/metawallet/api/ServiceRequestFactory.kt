@@ -22,6 +22,8 @@ object ServiceRequestFactory {
     private const val METHOD_TX_PARAMS = "transaction.params"
     private const val METHOD_PROXY_INFO = "getinfo"
     private const val METHOD_TORRENT_INFO = "get-count-blocks"
+    private const val METHOD_NODES_LIST = "node.list"
+    private const val METHOD_NODE_INFO = "node.item"
 
     //params
     private const val KEY_CURRENCY = "currency"
@@ -38,6 +40,8 @@ object ServiceRequestFactory {
     private const val KEY_HASH = "hash"
     private const val KEY_NAME = "name"
     private const val KEY_FLAG = "flag"
+    private const val KEY_NET = "net"
+    private const val KEY_SHORT = "short"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -55,6 +59,8 @@ object ServiceRequestFactory {
             REQUESTTYPE.PINGTORRENT -> createPingTorrentParamsRequest()
             REQUESTTYPE.SETWALLETNAME -> createSetWalletNameRequest(params!!)
             REQUESTTYPE.SETWALLETSYNC -> createSetWalletSyncRequest(params!!)
+            REQUESTTYPE.NODES_LIST -> createNodesListParamsRequest(params!!)
+            REQUESTTYPE.NODE_INFO -> createNodeInfoParamsRequest(params!!)
         }
     }
 
@@ -95,10 +101,12 @@ object ServiceRequestFactory {
         }
     }
 
-    fun getTransactionParams(to: String, value: String,
-                             fee: String, nonce: String,
-                             data: String, pubKey: String,
-                             sign: String): JsonObject {
+    fun getTransactionParams(
+        to: String, value: String,
+        fee: String, nonce: String,
+        data: String, pubKey: String,
+        sign: String
+    ): JsonObject {
         return JsonObject().apply {
             addProperty(KEY_TO, to)
             addProperty(KEY_VALUE, value)
@@ -156,74 +164,110 @@ object ServiceRequestFactory {
         }
     }
 
+    fun getNodesListParams(
+        net: String,
+        short: Boolean
+    ): JsonObject {
+        return JsonObject().apply {
+            addProperty(KEY_NET, net)
+            addProperty(KEY_SHORT, short)
+        }
+    }
+
+    fun getNodeInfoParams(
+        net: String,
+        address: String
+    ): JsonObject {
+        return JsonObject().apply {
+            addProperty(KEY_NET, net)
+            addProperty(KEY_ADDRESS, address)
+        }
+    }
+
     fun getHistoryParams(address: String): JsonObject = getBalanceParams(address)
 
     private fun createLoginRequest(params: Any) = ServiceRequest(
-            method = METHOD_LOGIN, params = params,
-            uid = WalletApplication.deviceId)
+        method = METHOD_LOGIN, params = params,
+        uid = WalletApplication.deviceId
+    )
 
     private fun createRegisterRequest(params: Any) = ServiceRequest(
-            method = METHOD_REGISTER, params = params,
-            uid = WalletApplication.deviceId)
+        method = METHOD_REGISTER, params = params,
+        uid = WalletApplication.deviceId
+    )
 
     private fun createWalletsRequest(params: Any) = ServiceRequest(
-            method = METHOD_ALL_WALLETS,
-            params = params,
-            token = WalletApplication.dbHelper.getToken(),
-            uid = WalletApplication.deviceId)
+        method = METHOD_ALL_WALLETS,
+        params = params,
+        token = WalletApplication.dbHelper.getToken(),
+        uid = WalletApplication.deviceId
+    )
 
     private fun createBalanceRequest(params: Any) = ServiceRequest(
-            method = METHOD_WALLET_BALANCE,
-            params = params,
-            uid = WalletApplication.deviceId)
+        method = METHOD_WALLET_BALANCE,
+        params = params,
+        uid = WalletApplication.deviceId
+    )
 
     private fun createHistoryRequest(params: Any) = ServiceRequest(
-            method = METHOD_WALLET_HISTORY,
-            params = params,
-            uid = WalletApplication.deviceId
+        method = METHOD_WALLET_HISTORY,
+        params = params,
+        uid = WalletApplication.deviceId
     )
 
     private fun createRefreshRequest() = ServiceRequest(
-            method = METHOD_REFRESH_TOKEN,
-            token = WalletApplication.dbHelper.getRefreshToken(),
-            uid = WalletApplication.deviceId)
+        method = METHOD_REFRESH_TOKEN,
+        token = WalletApplication.dbHelper.getRefreshToken(),
+        uid = WalletApplication.deviceId
+    )
 
     private fun createTransactionRequest(params: Any) = ServiceRequest(
-            method = METHOD_CREATE_TX,
-            params = params,
-            jsonrpc = "2.0",
-            uid = WalletApplication.deviceId)
+        method = METHOD_CREATE_TX,
+        params = params,
+        jsonrpc = "2.0",
+        uid = WalletApplication.deviceId
+    )
 
     private fun createTxInfoRequest(params: Any) = ServiceRequest(
-            method = METHOD_TX_INFO,
-            params = params,
-            uid = WalletApplication.deviceId
+        method = METHOD_TX_INFO,
+        params = params,
+        uid = WalletApplication.deviceId
     )
 
     private fun createSyncWalletRequest(params: Any) = ServiceRequest(
-            method = METHOD_SYNC_WALLET,
-            params = params,
-            token = WalletApplication.dbHelper.getToken(),
-            uid = WalletApplication.deviceId
+        method = METHOD_SYNC_WALLET,
+        params = params,
+        token = WalletApplication.dbHelper.getToken(),
+        uid = WalletApplication.deviceId
     )
 
     private fun createSetWalletNameRequest(params: Any) = ServiceRequest(
-            method = METHOD_SET_WALLET_NAME,
-            params = params,
-            token = WalletApplication.dbHelper.getToken(),
-            uid = WalletApplication.deviceId
+        method = METHOD_SET_WALLET_NAME,
+        params = params,
+        token = WalletApplication.dbHelper.getToken(),
+        uid = WalletApplication.deviceId
     )
 
     private fun createSetWalletSyncRequest(params: Any) = ServiceRequest(
-            method = METHOD_SET_WALLET_SYNC,
-            params = params,
-            token = WalletApplication.dbHelper.getToken(),
-            uid = WalletApplication.deviceId
+        method = METHOD_SET_WALLET_SYNC,
+        params = params,
+        token = WalletApplication.dbHelper.getToken(),
+        uid = WalletApplication.deviceId
     )
 
     private fun createTxParamsRequest(params: Any) = ServiceRequest(
-            method = METHOD_TX_PARAMS,
-            params = params
+        method = METHOD_TX_PARAMS,
+        params = params
+    )
+
+    private fun createNodesListParamsRequest(params: Any) = ServiceRequest(
+        method = METHOD_NODES_LIST,
+        params = params
+    )
+
+    private fun createNodeInfoParamsRequest(params: Any) = ServiceRequest(
+        method = METHOD_NODE_INFO,
+        params = params
     )
 
     private fun createPingProxyParamsRequest() = ServiceRequest(method = METHOD_PROXY_INFO)
@@ -244,6 +288,8 @@ object ServiceRequestFactory {
         PINGPROXY,
         PINGTORRENT,
         SETWALLETNAME,
-        SETWALLETSYNC
+        SETWALLETSYNC,
+        NODES_LIST,
+        NODE_INFO
     }
 }
