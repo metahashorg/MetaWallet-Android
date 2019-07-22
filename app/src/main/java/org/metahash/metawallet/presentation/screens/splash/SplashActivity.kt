@@ -453,7 +453,6 @@ class SplashActivity : BaseActivity() {
     }
 
     private fun getWallets(currency: String) {
-        return
         if (currency == Constants.TYPE_MHC.toString()) {
             mMHCWalletsDisposable.dispose()
         } else {
