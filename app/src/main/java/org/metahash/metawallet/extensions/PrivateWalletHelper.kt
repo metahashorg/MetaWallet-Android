@@ -1,5 +1,6 @@
 package org.metahash.metawallet.extensions
 
+import android.util.Log
 import org.metahash.metawallet.data.models.Wallet
 
 object PrivateWalletHelper {
@@ -7,6 +8,7 @@ object PrivateWalletHelper {
     var privateKeyInfo: String = ""
 
     fun createWalletFromPrivateKey(password: String): Wallet? {
+        Log.d("MIINE", "createWalletFromPrivateKey")
         val decryptedPrivateKey =
                 prepareKey(
                         decryptPrivateKey(privateKeyInfo.toByteArray(Charsets.US_ASCII), password) ?: ""

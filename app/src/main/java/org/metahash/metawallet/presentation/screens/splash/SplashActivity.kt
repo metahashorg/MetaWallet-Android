@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import android.view.View
 import android.webkit.*
 import android.widget.TextView
@@ -56,7 +57,6 @@ class SplashActivity : BaseActivity() {
         setContentView(R.layout.activity_splash)
         showLoadingOrError()
         initWebView()
-        //webView.loadUrl("file:///android_asset/index.html")
         webView.loadUrl(Constants.WEB_URL)
         fromUI({
             //if need to update - delete proxy and torrent, then ping
@@ -928,7 +928,9 @@ class SplashActivity : BaseActivity() {
                     getString(R.string.error_invalid_private_key)
                 )
             }
-            KeyFormatter.isSECP256k1(result) -> importWalletByPrivateKey(result)
+            KeyFormatter.isSECP256k1(result) -> {
+                importWalletByPrivateKey(result)
+            }
             else -> {
                 JsFunctionCaller.callFunction(
                     webView,
