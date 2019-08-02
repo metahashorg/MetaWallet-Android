@@ -254,8 +254,8 @@ class SplashActivity : BaseActivity() {
                 { saveLanguage(it) },
                 { a, n, _ -> renameWallet(a, n) },
                 { a, _ -> deleteWalletFromLocal(a) },
-                { getNodesList() }, //getNodesListResult
-                { getNodeInfo(it) } //getNodeInfoResult
+                { getNodesList() },
+                { getNodeInfo(it) }
             ),
             Constants.JS_BRIDGE)
     }
@@ -416,10 +416,17 @@ class SplashActivity : BaseActivity() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
-                    //send result here
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.NODESLISTRESULT, it
+                    )
                 },
                 {
-                    it.printStackTrace()
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.NODESLISTRESULT,
+                        JsResultHelper.nodesListResult(listOf(), "ERROR")
+                    )
                 }
             )
         )
@@ -430,10 +437,17 @@ class SplashActivity : BaseActivity() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 {
-                    //send result here
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.NODEINFORESULT, it
+                    )
                 },
                 {
-                    it.printStackTrace()
+                    JsFunctionCaller.callFunction(
+                        webView,
+                        JsFunctionCaller.FUNCTION.NODEINFORESULT,
+                        JsResultHelper.nodesInfoResult(null, "ERROR")
+                    )
                 }
             )
         )

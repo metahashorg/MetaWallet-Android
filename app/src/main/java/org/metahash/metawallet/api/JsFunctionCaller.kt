@@ -55,6 +55,7 @@ object JsFunctionCaller {
         IMPORTPRIVATERESULT("importPrivateWalletResult"),
         RENAMERESULT("renameWalletResult"),
         DELETERESULT("deleteWalletResult"),
-        test("getDataResult")
+        NODESLISTRESULT("getNodesListResult"),
+        NODEINFORESULT("getNodeInfoResult")
     }
 }

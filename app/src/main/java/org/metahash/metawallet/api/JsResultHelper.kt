@@ -24,16 +24,14 @@ object JsResultHelper {
         nodes: List<NodeItem>,
         status: String
     ): String {
-        val nodesData = WalletApplication.gson.toJson(nodes)
-        return WalletApplication.gson.toJson(NodeListResult(nodesData, status))
+        return WalletApplication.gson.toJson(NodeListResult(nodes, status))
     }
 
     fun nodesInfoResult(
-        node: NodeInfo,
+        node: NodeInfo?,
         status: String
     ): String {
-        val nodeData = WalletApplication.gson.toJson(node)
-        return WalletApplication.gson.toJson(NodeInfoResult(nodeData, status))
+        return WalletApplication.gson.toJson(NodeInfoResult(node, status))
     }
 }
 
@@ -48,11 +46,11 @@ data class PrivateKeyDecryptedResult(
 )
 
 data class NodeListResult(
-    private val data: String,
+    private val data: List<NodeItem>,
     private val status: String
 )
 
 data class NodeInfoResult(
-    private val data: String,
+    private val data: NodeInfo?,
     private val status: String
 )
