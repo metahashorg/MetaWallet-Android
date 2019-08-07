@@ -42,6 +42,7 @@ object ServiceRequestFactory {
     private const val KEY_FLAG = "flag"
     private const val KEY_NET = "net"
     private const val KEY_SHORT = "short"
+    private const val KEY_UNPACK = "unpack"
 
     fun getRequestData(type: REQUESTTYPE, params: Any?): ServiceRequest {
         return when (type) {
@@ -181,6 +182,7 @@ object ServiceRequestFactory {
         return JsonObject().apply {
             addProperty(KEY_NET, net)
             addProperty(KEY_ADDRESS, address)
+            addProperty(KEY_UNPACK, true)
         }
     }
 
